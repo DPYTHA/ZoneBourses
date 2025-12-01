@@ -1,6 +1,6 @@
 from flask import Flask, request, redirect, url_for, session, jsonify, render_template
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-import psycopg
+import psycopg2
 from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
