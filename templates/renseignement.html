@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opportunités Internationales - ZoneBourse</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --primary-light: #a7f3d0;
+            --white: #ffffff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--white);
+            color: var(--gray-800);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        .nav-container {
+            background: var(--white);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: var(--gray-800);
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        .logo-svg {
+            width: 32px;
+            height: 32px;
+            margin-right: 10px;
+            color: var(--primary);
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--gray-600);
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--white);
+            text-align: center;
+            padding: 6rem 2rem;
+        }
+
+        .hero-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            font-weight: 400;
+            margin-bottom: 2.5rem;
+            opacity: 0.95;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--white);
+            color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--white);
+            border: 2px solid var(--white);
+        }
+
+        .btn-outline:hover {
+            background: var(--white);
+            color: var(--primary);
+        }
+
+        /* Content Sections */
+        .section {
+            padding: 5rem 2rem;
+        }
+
+        .section-white {
+            background: var(--white);
+        }
+
+        .section-gray {
+            background: var(--gray-50);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: var(--gray-800);
+        }
+
+        .section-subtitle {
+            font-size: 1.125rem;
+            text-align: center;
+            color: var(--gray-600);
+            margin-bottom: 3rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Grid Layout */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--gray-100);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--gray-800);
+        }
+
+        .card-text {
+            color: var(--gray-600);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Lists */
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--gray-100);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .feature-list li:before {
+            content: '✓';
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: var(--gray-600);
+        }
+
+        /* Guide */
+        .guide-item {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .guide-icon {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .guide-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--gray-800);
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--gray-800);
+            color: var(--white);
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+
+        .footer p {
+            opacity: 0.8;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.25rem;
+            }
+            
+            .section {
+                padding: 3rem 1rem;
+            }
+            
+            .nav-menu {
+                gap: 1rem;
+            }
+            
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav-container">
+        <a href="/" class="nav-logo">
+            <svg class="logo-svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
+            </svg>
+            ZoneBourse
+        </a>
+        <div class="nav-menu">
+            <a href="/" class="nav-link">Accueil</a>
+            <a href="/login" class="nav-link">Connexion</a>
+            <a href="/register" class="nav-link">Inscription</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <h1 class="hero-title">Carrière Internationale</h1>
+            <p class="hero-subtitle">Transformez votre diplôme en opportunités professionnelles en Europe et en Asie</p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="#opportunites" class="btn btn-primary">
+                    <i class="fas fa-rocket"></i> Découvrir
+                </a>
+                <a href="/register" class="btn btn-outline">
+                    <i class="fas fa-user-plus"></i> Commencer
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Opportunities Section -->
+    <section id="opportunites" class="section section-white">
+        <div class="container">
+            <h2 class="section-title">Opportunités Mondiales</h2>
+            <p class="section-subtitle">Explorez les marchés du travail les plus dynamiques au monde</p>
+            
+            <div class="grid-2">
+                <!-- Europe -->
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-landmark"></i>
+                    </div>
+                    <h3 class="card-title">Europe</h3>
+                    <p class="card-text">Marché mature avec des opportunités dans les secteurs de pointe et une qualité de vie exceptionnelle.</p>
+                    <ul class="feature-list">
+                        <li>Ingénierie & Technologie</li>
+                        <li>Secteur Médical & Pharma</li>
+                        <li>Finance & Banque</li>
+                        <li>Énergies Renouvelables</li>
+                        <li>Recherche & Développement</li>
+                    </ul>
+                </div>
+
+                <!-- Asie -->
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-globe-asia"></i>
+                    </div>
+                    <h3 class="card-title">Asie</h3>
+                    <p class="card-text">Croissance rapide et opportunités innovantes dans les technologies émergentes.</p>
+                    <ul class="feature-list">
+                        <li>Technologie & Intelligence Artificielle</li>
+                        <li>Commerce International</li>
+                        <li>FinTech & Blockchain</li>
+                        <li>Manufacture & Production</li>
+                        <li>Enseignement des Langues</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="section section-gray">
+        <div class="container">
+            <h2 class="section-title">Notre Impact</h2>
+            <p class="section-subtitle">Rejoignez des milliers d'étudiants qui ont réussi leur insertion internationale</p>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">85%</div>
+                    <div class="stat-label">Taux d'emploi après 6 mois</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">50K+</div>
+                    <div class="stat-label">Salaire moyen annuel (€)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">120+</div>
+                    <div class="stat-label">Pays d'insertion</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">94%</div>
+                    <div class="stat-label">Satisfaction employeurs</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Guide Section -->
+    <section class="section section-white">
+        <div class="container">
+            <h2 class="section-title">Guide Pratique</h2>
+            <p class="section-subtitle">Les étapes essentielles pour réussir votre projet international</p>
+            
+            <div class="grid-3">
+                <div class="guide-item">
+                    <div class="guide-icon">
+                        <i class="fas fa-passport"></i>
+                    </div>
+                    <h3 class="guide-title">Préparer son dossier</h3>
+                    <p>CV adapté, lettres de motivation, diplômes et références professionnelles</p>
+                </div>
+                
+                <div class="guide-item">
+                    <div class="guide-icon">
+                        <i class="fas fa-language"></i>
+                    </div>
+                    <h3 class="guide-title">Compétences linguistiques</h3>
+                    <p>Anglais professionnel et langue locale pour maximiser vos chances</p>
+                </div>
+                
+                <div class="guide-item">
+                    <div class="guide-icon">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <h3 class="guide-title">Réseautage</h3>
+                    <p>LinkedIn optimisé, salons professionnels et contacts locaux</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="section section-gray">
+        <div class="container">
+            <h2 class="section-title">Prêt à Commencer ?</h2>
+            <p class="section-subtitle">Rejoignez notre plateforme et accédez à toutes les ressources pour votre carrière internationale</p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem;">
+                <a href="/register" class="btn btn-primary" style="background: var(--primary); color: white;">
+                    <i class="fas fa-user-plus"></i> Créer un compte
+                </a>
+                <a href="/login" class="btn btn-outline" style="border-color: var(--primary); color: var(--primary);">
+                    <i class="fas fa-sign-in-alt"></i> Se connecter
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 ZoneBourse. Tous droits réservés.</p>
+            <p style="margin-top: 1rem;">Votre partenaire pour une carrière internationale réussie</p>
+        </div>
+    </footer>
+
+    <script>
+        // Animation simple au scroll
+        document.addEventListener('DOMContentLoaded', function() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            // Animer les cartes
+            document.querySelectorAll('.card, .guide-item, .stat-item').forEach(item => {
+                item.style.opacity = '0';
+                item.style.transform = 'translateY(20px)';
+                item.style.transition = 'all 0.6s ease';
+                observer.observe(item);
+            });
+        });
+    </script>
+</body>
+</html>
