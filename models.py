@@ -1,4 +1,4 @@
-import psycopg2
+import psycopg
 from datetime import datetime
 from flask_login import UserMixin
 # Ajouter cette fonction pour gérer l'upload des fichiers
