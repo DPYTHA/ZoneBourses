@@ -1,19 +1,28 @@
 import os
 import psycopg2
-from datetime import datetime
+import json
 from flask_login import UserMixin
 import uuid
-from urllib.parse import urlparse
+
+# Suppression de la fonction get_db_connection en double
+# Cette fonction est déjà définie dans app.py
+# Laissons Flask gérer une seule instance de connexion
 
 UPLOAD_FOLDER = 'static/uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'mkv'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'mkv', 'pdf', 'doc', 'docx'}
 
 def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    """Vérifie si le fichier a une extension autorisée"""
+    if not filename or '.' not in filename:
+        return False
+    return filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def save_uploaded_file(file):
-    if file and allowed_file(file.filename):
+    """Sauvegarde un fichier uploadé et retourne son chemin relatif"""
+    if not file or not file.filename or file.filename == '':
+        return None
+    
+    if allowed_file(file.filename):
         # Créer le dossier s'il n'existe pas
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
         
@@ -22,125 +31,20 @@ def save_uploaded_file(file):
         filename = f"{uuid.uuid4().hex}.{file_ext}"
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         
-        file.save(filepath)
-        return f"/static/uploads/{filename}"
-    return None
-
-# Configuration de la base de données pour Railway
-DATABASE_URL = os.environ.get('DATABASE_URL')
-
-def get_db_connection():
-    """Établit une connexion à la base de données"""
-    try:
-        # Utilisez DATABASE_URL pour Railway, sinon la config locale
-        if DATABASE_URL:
-            # Pour Railway avec SSL
-            conn = psycopg2.connect(DATABASE_URL, sslmode='require')
-            print("✅ Connexion à la DB Railway établie")
-        else:
-            # Pour le développement local
-            conn = psycopg2.connect(
-                dbname='Minizone_db',
-                user='Zone_user',
-                password='Pytha1991',
-                host='localhost',
-                port='5432'
-            )
-            print("✅ Connexion à la DB locale établie")
-        return conn
-    except Exception as e:
-        print(f"❌ Erreur de connexion à la base de données: {e}")
+        try:
+            file.save(filepath)
+            print(f"✅ Fichier sauvegardé: {filename}")
+            return f"/static/uploads/{filename}"
+        except Exception as e:
+            print(f"❌ Erreur lors de la sauvegarde du fichier: {e}")
+            return None
+    else:
+        print(f"❌ Format de fichier non autorisé: {file.filename}")
         return None
 
-def init_db():
-    """Initialise la base de données avec les tables nécessaires"""
-    conn = get_db_connection()
-    if conn is None:
-        print("⚠️  Impossible de se connecter à la base de données, skip init_db")
-        return
-    
-    cur = conn.cursor()
-    
-    try:
-        # Création de la table utilisateurs
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                nom VARCHAR(100) NOT NULL,
-                prenom VARCHAR(100) NOT NULL,
-                numero_whatsapp VARCHAR(20) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                email VARCHAR(255),
-                is_active BOOLEAN DEFAULT TRUE,
-                is_admin BOOLEAN DEFAULT FALSE,
-                date_inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        
-        # Création de la table des bourses
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS bourses (
-                id SERIAL PRIMARY KEY,
-                titre VARCHAR(255) NOT NULL,
-                description TEXT,
-                pays VARCHAR(100),
-                universite VARCHAR(255),
-                niveau_etude VARCHAR(100),
-                domaine_etude VARCHAR(255),
-                montant_bourse VARCHAR(100),
-                date_limite DATE,
-                conditions TEXT,
-                procedure_postulation TEXT,
-                image_url VARCHAR(500),
-                video_url VARCHAR(500),
-                procedure_medias TEXT,
-                date_publication TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_active BOOLEAN DEFAULT TRUE
-            )
-        ''')
-        
-        # Ajouter la colonne procedure_medias si elle n'existe pas
-        try:
-            cur.execute('''
-                ALTER TABLE bourses 
-                ADD COLUMN IF NOT EXISTS procedure_medias TEXT
-            ''')
-        except Exception as e:
-            print(f"Note: {e}")
-        
-        # Ajouter la colonne is_active si elle n'existe pas
-        try:
-            cur.execute('ALTER TABLE bourses ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE')
-        except Exception as e:
-            print(f"Note: {e}")
-        
-        # Créer l'admin par défaut
-        cur.execute('''
-            INSERT INTO users (nom, prenom, numero_whatsapp, email, password, is_admin, is_active)
-            VALUES ('Admin', 'System', '+2250710069791', 'moua18978@gmail.com', 'admin123', TRUE, TRUE)
-            ON CONFLICT (numero_whatsapp) DO NOTHING
-        ''')
-        
-        # Insérer des bourses d'exemple
-        cur.execute('''
-            INSERT INTO bourses (titre, description, pays, universite, niveau_etude, domaine_etude, montant_bourse, date_limite, conditions, procedure_postulation, is_active)
-            VALUES 
-            ('Bourse d''excellence en Informatique', 'Bourse complète pour étudier l''informatique en France avec tous les frais couverts.', 'France', 'Université Paris-Saclay', 'Master', 'Informatique', '15 000€ par an', '2024-06-30', 'Diplôme de licence en informatique, moyenne minimale de 14/20', '1. Remplir le formulaire en ligne\n2. Envoyer les documents requis\n3. Passer un entretien', TRUE),
-            ('Bourse pour études en Génie Civil', 'Bourse partielle pour études de génie civil au Canada avec possibilité de stage.', 'Canada', 'Université de Montréal', 'Licence', 'Génie Civil', '10 000 CAD par an', '2024-07-15', 'Baccalauréat scientifique, bon niveau en mathématiques', '1. Créer un compte sur le portail de l''université\n2. Soumettre le dossier de candidature\n3. Attendre la réponse', TRUE)
-            ON CONFLICT DO NOTHING
-        ''')
-        
-        conn.commit()
-        print("✅ Base de données initialisée avec succès")
-        
-    except Exception as e:
-        print(f"❌ Erreur lors de l'initialisation de la base: {e}")
-        conn.rollback()
-    finally:
-        cur.close()
-        conn.close()
-
 class User(UserMixin):
+    """Classe utilisateur pour Flask-Login"""
+    
     def __init__(self, id, nom, prenom, numero_whatsapp, password, email, is_active, is_admin, date_inscription):
         self.id = id
         self.nom = nom
@@ -154,88 +58,268 @@ class User(UserMixin):
 
     @property
     def is_active(self):
+        """Propriété pour vérifier si l'utilisateur est actif"""
         return self._is_active
 
+    def get_id(self):
+        """Retourne l'ID de l'utilisateur sous forme de chaîne"""
+        return str(self.id)
+
     @staticmethod
-    def get(user_id):
+    def get_by_id(user_id):
+        """Récupère un utilisateur par son ID"""
+        from app import get_db_connection  # Importation locale pour éviter les dépendances circulaires
+        
         conn = get_db_connection()
         if conn is None:
             return None
         
-        cur = conn.cursor()
-        cur.execute('SELECT id, nom, prenom, numero_whatsapp, password, email, is_active, is_admin, date_inscription FROM users WHERE id = %s', (user_id,))
-        user_data = cur.fetchone()
-        cur.close()
-        conn.close()
-        
-        if user_data:
-            return User(*user_data)
-        return None
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                'SELECT id, nom, prenom, numero_whatsapp, password, email, is_active, is_admin, date_inscription '
+                'FROM users WHERE id = %s',
+                (user_id,)
+            )
+            user_data = cur.fetchone()
+            cur.close()
+            conn.close()
+            
+            if user_data:
+                return User(*user_data)
+            return None
+        except Exception as e:
+            print(f"Erreur lors de la récupération de l'utilisateur: {e}")
+            return None
 
     @staticmethod
     def get_by_whatsapp(numero_whatsapp):
+        """Récupère un utilisateur par son numéro WhatsApp"""
+        from app import get_db_connection  # Importation locale pour éviter les dépendances circulaires
+        
         conn = get_db_connection()
         if conn is None:
             return None
         
-        cur = conn.cursor()
-        cur.execute('SELECT id, nom, prenom, numero_whatsapp, password, email, is_active, is_admin, date_inscription FROM users WHERE numero_whatsapp = %s', (numero_whatsapp,))
-        user_data = cur.fetchone()
-        cur.close()
-        conn.close()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                'SELECT id, nom, prenom, numero_whatsapp, password, email, is_active, is_admin, date_inscription '
+                'FROM users WHERE numero_whatsapp = %s',
+                (numero_whatsapp,)
+            )
+            user_data = cur.fetchone()
+            cur.close()
+            conn.close()
+            
+            if user_data:
+                return User(*user_data)
+            return None
+        except Exception as e:
+            print(f"Erreur lors de la récupération de l'utilisateur par WhatsApp: {e}")
+            return None
+
+    def to_dict(self):
+        """Convertit l'utilisateur en dictionnaire pour JSON"""
+        return {
+            'id': self.id,
+            'nom': self.nom,
+            'prenom': self.prenom,
+            'numero_whatsapp': self.numero_whatsapp,
+            'email': self.email,
+            'is_active': self.is_active,
+            'is_admin': self.is_admin,
+            'date_inscription': self.date_inscription.isoformat() if self.date_inscription else None
+        }
+
+class Bourse:
+    """Classe représentant une bourse (optionnel - pour une abstraction future)"""
+    
+    def __init__(self, id, titre, description, pays, universite, niveau_etude, 
+                 domaine_etude, montant_bourse, date_limite, conditions, 
+                 procedure_postulation, image_url, video_url, procedure_medias, 
+                 date_publication, is_active):
+        self.id = id
+        self.titre = titre
+        self.description = description
+        self.pays = pays
+        self.universite = universite
+        self.niveau_etude = niveau_etude
+        self.domaine_etude = domaine_etude
+        self.montant_bourse = montant_bourse
+        self.date_limite = date_limite
+        self.conditions = conditions
+        self.procedure_postulation = procedure_postulation
+        self.image_url = image_url
+        self.video_url = video_url
+        self.procedure_medias = procedure_medias
+        self.date_publication = date_publication
+        self.is_active = is_active
+
+    @staticmethod
+    def get_all_active():
+        """Récupère toutes les bourses actives"""
+        from app import get_db_connection
         
-        if user_data:
-            return User(*user_data)
-        return None
-
-# Route de debug pour vérifier la structure de la base
-from flask import jsonify
-
-def create_debug_route(app):
-    @app.route('/debug/check-db')
-    def debug_check_db():
-        """Route de debug pour vérifier la structure de la base"""
         conn = get_db_connection()
         if conn is None:
-            return jsonify({'error': 'DB connection failed'}), 500
+            return []
         
-        cur = conn.cursor()
-        
-        # Structure de la table bourses
-        cur.execute("""
-            SELECT column_name, data_type, ordinal_position
-            FROM information_schema.columns
-            WHERE table_name = 'bourses'
-            ORDER BY ordinal_position
-        """)
-        
-        columns = cur.fetchall()
-        
-        # Compter les bourses
-        cur.execute("SELECT COUNT(*) FROM bourses")
-        count = cur.fetchone()[0]
-        
-        # Voir quelques bourses
-        cur.execute("SELECT id, titre FROM bourses LIMIT 5")
-        sample_bourses = cur.fetchall()
-        
-        # Voir les utilisateurs
-        cur.execute("SELECT COUNT(*) FROM users")
-        users_count = cur.fetchone()[0]
-        
-        cur.close()
-        conn.close()
-        
-        return jsonify({
-            'table_structure': [
-                {'position': col[2], 'name': col[0], 'type': col[1]} 
-                for col in columns
-            ],
-            'total_bourses': count,
-            'total_users': users_count,
-            'sample_bourses': [
-                {'id': b[0], 'titre': b[1]}
-                for b in sample_bourses
-            ],
-            'database_url': DATABASE_URL is not None
-        })
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                'SELECT * FROM bourses WHERE is_active = TRUE ORDER BY date_limite ASC'
+            )
+            bourses_data = cur.fetchall()
+            cur.close()
+            conn.close()
+            
+            bourses = []
+            for bourse in bourses_data:
+                # Parser les médias de procédure
+                procedure_medias = []
+                if bourse[13]:  # Index 13 pour procedure_medias
+                    try:
+                        if isinstance(bourse[13], str):
+                            procedure_medias = json.loads(bourse[13])
+                    except json.JSONDecodeError:
+                        procedure_medias = []
+                
+                bourses.append({
+                    'id': bourse[0],
+                    'titre': bourse[1],
+                    'description': bourse[2],
+                    'pays': bourse[3],
+                    'universite': bourse[4],
+                    'niveau_etude': bourse[5],
+                    'domaine_etude': bourse[6],
+                    'montant_bourse': bourse[7],
+                    'date_limite': bourse[8],
+                    'conditions': bourse[9],
+                    'procedure_postulation': bourse[10],
+                    'image_url': bourse[11],
+                    'video_url': bourse[12],
+                    'procedure_medias': procedure_medias,
+                    'date_publication': bourse[14],
+                    'is_active': bourse[15]
+                })
+            
+            return bourses
+            
+        except Exception as e:
+            print(f"Erreur lors de la récupération des bourses: {e}")
+            return []
+
+def create_debug_route(app):
+    """Crée une route de debug pour vérifier l'état du système"""
+    
+    @app.route('/debug/models-status')
+    def debug_models_status():
+        """Route de debug pour vérifier l'état des modèles"""
+        try:
+            from app import get_db_connection
+            
+            conn = get_db_connection()
+            if conn is None:
+                return json.dumps({
+                    'status': 'error',
+                    'message': 'Connexion DB impossible'
+                }, ensure_ascii=False, indent=2), 500
+            
+            cur = conn.cursor()
+            
+            # Vérifier la table users
+            cur.execute("SELECT COUNT(*) FROM users")
+            users_count = cur.fetchone()[0]
+            
+            # Vérifier la table bourses
+            cur.execute("SELECT COUNT(*) FROM bourses")
+            bourses_count = cur.fetchone()[0]
+            
+            # Vérifier les colonnes de bourses
+            cur.execute("""
+                SELECT column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_name = 'bourses' 
+                ORDER BY ordinal_position
+            """)
+            columns = cur.fetchall()
+            
+            cur.close()
+            conn.close()
+            
+            result = {
+                'status': 'success',
+                'models_loaded': True,
+                'database': {
+                    'users_count': users_count,
+                    'bourses_count': bourses_count,
+                    'bourses_columns': [
+                        {'name': col[0], 'type': col[1]} 
+                        for col in columns
+                    ]
+                },
+                'upload_config': {
+                    'folder': UPLOAD_FOLDER,
+                    'allowed_extensions': list(ALLOWED_EXTENSIONS),
+                    'folder_exists': os.path.exists(UPLOAD_FOLDER)
+                }
+            }
+            
+            return json.dumps(result, ensure_ascii=False, indent=2)
+            
+        except Exception as e:
+            return json.dumps({
+                'status': 'error',
+                'message': f'Erreur: {str(e)}'
+            }, ensure_ascii=False, indent=2), 500
+
+# Fonctions utilitaires pour gérer les médias
+def parse_procedure_medias(medias_str):
+    """Parse les médias de procédure depuis une chaîne JSON"""
+    if not medias_str:
+        return []
+    
+    try:
+        if isinstance(medias_str, str):
+            return json.loads(medias_str)
+        elif isinstance(medias_str, (list, dict)):
+            return medias_str
+        else:
+            return []
+    except json.JSONDecodeError:
+        print(f"Erreur de parsing JSON pour les médias: {medias_str}")
+        return []
+
+def save_multiple_files(files_list):
+    """Sauvegarde plusieurs fichiers et retourne leurs chemins"""
+    saved_files = []
+    
+    for file in files_list:
+        if file and file.filename:
+            file_url = save_uploaded_file(file)
+            if file_url:
+                # Déterminer le type de fichier
+                filename_lower = file.filename.lower()
+                if filename_lower.endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm')):
+                    file_type = 'video'
+                elif filename_lower.endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')):
+                    file_type = 'image'
+                elif filename_lower.endswith(('.pdf',)):
+                    file_type = 'pdf'
+                elif filename_lower.endswith(('.doc', '.docx')):
+                    file_type = 'document'
+                else:
+                    file_type = 'file'
+                
+                saved_files.append({
+                    'url': file_url,
+                    'type': file_type,
+                    'filename': file.filename
+                })
+    
+    return saved_files
+
+# Initialisation du dossier d'upload au chargement du module
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+print(f"📁 Dossier d'upload vérifié: {UPLOAD_FOLDER}")
