@@ -1,22 +1,46 @@
+import os
+import json
 from flask import Flask, request, redirect, url_for, session, jsonify, render_template
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 import psycopg2
-from datetime import datetime
-import os
+from urllib.parse import urlparse
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
-import os
 import uuid
-import json
 
 app = Flask(__name__)
-app.secret_key = 'votre_cle_secrete_tres_securisee_zonebourse'
 
-# Configuration des uploads
-UPLOAD_FOLDER = 'static/uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'mkv'}
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# Configuration pour Railway
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'votre_cle_secrete_tres_securisee_zonebourse')
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
+
+# Configuration de la base de données pour Railway
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    # Pour Railway (URL de connexion PostgreSQL)
+    url = urlparse(DATABASE_URL)
+    DB_CONFIG = {
+        'dbname': url.path[1:],
+        'user': url.username,
+        'password': url.password,
+        'host': url.hostname,
+        'port': url.port
+    }
+    print(f"✅ Configuration DB Railway détectée: {url.hostname}")
+else:
+    # Pour le développement local
+    DB_CONFIG = {
+        'dbname': 'Minizone_db',
+        'user': 'Zone_user',
+        'password': 'Pytha1991',
+        'host': 'localhost',
+        'port': '5432'
+    }
+    print("⚠️  Configuration DB locale")
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'mkv'}
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -26,12 +50,12 @@ def save_uploaded_file(file):
     if file and file.filename and file.filename != '':
         if allowed_file(file.filename):
             # Créer le dossier s'il n'existe pas
-            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
             
             # Générer un nom de fichier unique
             file_ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
             filename = f"{uuid.uuid4().hex}.{file_ext}" if file_ext else f"{uuid.uuid4().hex}"
-            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             
             try:
                 file.save(filepath)
@@ -44,15 +68,6 @@ def save_uploaded_file(file):
             print(f"❌ Format non autorisé: {file.filename}")
             return None
     return None
-
-# Configuration de la base de données PostgreSQL
-DB_CONFIG = {
-    'dbname': 'Minizone_db',
-    'user': 'Zone_user',
-    'password': 'Pytha1991',
-    'host': 'localhost',
-    'port': '5432'
-}
 
 # Configuration de Flask-Login
 login_manager = LoginManager()
@@ -78,6 +93,9 @@ class User(UserMixin):
 @login_manager.user_loader
 def load_user(user_id):
     conn = get_db_connection()
+    if conn is None:
+        return None
+    
     cur = conn.cursor()
     cur.execute('SELECT id, nom, prenom, numero_whatsapp, password, email, is_active, is_admin, date_inscription FROM users WHERE id = %s', (user_id,))
     user_data = cur.fetchone()
@@ -89,73 +107,110 @@ def load_user(user_id):
     return None
 
 def get_db_connection():
-    return psycopg2.connect(**DB_CONFIG)
+    """Établit une connexion à la base de données"""
+    try:
+        # Utilisez DATABASE_URL pour Railway, sinon la config locale
+        DATABASE_URL = os.environ.get('DATABASE_URL')
+        if DATABASE_URL:
+            # Pour Railway avec SSL
+            conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+            print("✅ Connexion à la DB Railway établie")
+        else:
+            # Pour le développement local
+            conn = psycopg2.connect(**DB_CONFIG)
+            print("✅ Connexion à la DB locale établie")
+        return conn
+    except Exception as e:
+        print(f"❌ Erreur de connexion à la base de données: {e}")
+        return None
 
 def init_db():
+    """Initialise la base de données avec les tables nécessaires"""
     conn = get_db_connection()
+    if conn is None:
+        print("⚠️  Impossible de se connecter à la base de données, skip init_db")
+        return
+    
     cur = conn.cursor()
     
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            nom VARCHAR(100) NOT NULL,
-            prenom VARCHAR(100) NOT NULL,
-            numero_whatsapp VARCHAR(20) UNIQUE NOT NULL,
-            password VARCHAR(255) NOT NULL,
-            email VARCHAR(255),
-            is_active BOOLEAN DEFAULT TRUE,
-            is_admin BOOLEAN DEFAULT FALSE,
-            date_inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS bourses (
-            id SERIAL PRIMARY KEY,
-            titre VARCHAR(255) NOT NULL,
-            description TEXT,
-            pays VARCHAR(100),
-            universite VARCHAR(255),
-            niveau_etude VARCHAR(100),
-            domaine_etude VARCHAR(255),
-            montant_bourse VARCHAR(100),
-            date_limite DATE,
-            conditions TEXT,
-            procedure_postulation TEXT,
-            image_url VARCHAR(500),
-            video_url VARCHAR(500),
-            procedure_medias TEXT,
-            date_publication TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            is_active BOOLEAN DEFAULT TRUE
-        )
-    ''')
-    
-    # Ajouter la colonne is_active si elle n'existe pas
     try:
-        cur.execute('ALTER TABLE bourses ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE')
+        # Création de la table utilisateurs
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                nom VARCHAR(100) NOT NULL,
+                prenom VARCHAR(100) NOT NULL,
+                numero_whatsapp VARCHAR(20) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                email VARCHAR(255),
+                is_active BOOLEAN DEFAULT TRUE,
+                is_admin BOOLEAN DEFAULT FALSE,
+                date_inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Création de la table des bourses
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS bourses (
+                id SERIAL PRIMARY KEY,
+                titre VARCHAR(255) NOT NULL,
+                description TEXT,
+                pays VARCHAR(100),
+                universite VARCHAR(255),
+                niveau_etude VARCHAR(100),
+                domaine_etude VARCHAR(255),
+                montant_bourse VARCHAR(100),
+                date_limite DATE,
+                conditions TEXT,
+                procedure_postulation TEXT,
+                image_url VARCHAR(500),
+                video_url VARCHAR(500),
+                procedure_medias TEXT,
+                date_publication TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT TRUE
+            )
+        ''')
+        
+        # Ajouter la colonne procedure_medias si elle n'existe pas
+        try:
+            cur.execute('''
+                ALTER TABLE bourses 
+                ADD COLUMN IF NOT EXISTS procedure_medias TEXT
+            ''')
+        except Exception as e:
+            print(f"Note: {e}")
+        
+        # Ajouter la colonne is_active si elle n'existe pas
+        try:
+            cur.execute('ALTER TABLE bourses ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE')
+        except Exception as e:
+            print(f"Note: {e}")
+        
+        # Créer l'admin par défaut
+        cur.execute('''
+            INSERT INTO users (nom, prenom, numero_whatsapp, email, password, is_admin, is_active)
+            VALUES ('Admin', 'System', '+2250710069791', 'moua18978@gmail.com', 'admin123', TRUE, TRUE)
+            ON CONFLICT (numero_whatsapp) DO NOTHING
+        ''')
+        
+        # Insérer des bourses d'exemple
+        cur.execute('''
+            INSERT INTO bourses (titre, description, pays, universite, niveau_etude, domaine_etude, montant_bourse, date_limite, conditions, procedure_postulation, is_active)
+            VALUES 
+            ('Bourse d''excellence en Informatique', 'Bourse complète pour étudier l''informatique en France avec tous les frais couverts.', 'France', 'Université Paris-Saclay', 'Master', 'Informatique', '15 000€ par an', '2024-06-30', 'Diplôme de licence en informatique, moyenne minimale de 14/20', '1. Remplir le formulaire en ligne\n2. Envoyer les documents requis\n3. Passer un entretien', TRUE),
+            ('Bourse pour études en Génie Civil', 'Bourse partielle pour études de génie civil au Canada avec possibilité de stage.', 'Canada', 'Université de Montréal', 'Licence', 'Génie Civil', '10 000 CAD par an', '2024-07-15', 'Baccalauréat scientifique, bon niveau en mathématiques', '1. Créer un compte sur le portail de l''université\n2. Soumettre le dossier de candidature\n3. Attendre la réponse', TRUE)
+            ON CONFLICT DO NOTHING
+        ''')
+        
+        conn.commit()
+        print("✅ Base de données initialisée avec succès")
+        
     except Exception as e:
-        print(f"Note: {e}")
-    
-    cur.execute('''
-        INSERT INTO users (nom, prenom, numero_whatsapp, email, password, is_admin, is_active)
-        VALUES ('Admin', 'System', '+2250710069791', 'moua18978@gmail.com', 'admin123', TRUE, TRUE)
-        ON CONFLICT (numero_whatsapp) DO NOTHING
-    ''')
-    
-    cur.execute('''
-        INSERT INTO bourses (titre, description, pays, universite, niveau_etude, domaine_etude, montant_bourse, date_limite, conditions, procedure_postulation, is_active)
-        VALUES 
-        ('Bourse d''excellence en Informatique', 'Bourse complète pour étudier l''informatique en France avec tous les frais couverts.', 'France', 'Université Paris-Saclay', 'Master', 'Informatique', '15 000€ par an', '2024-06-30', 'Diplôme de licence en informatique, moyenne minimale de 14/20', '1. Remplir le formulaire en ligne\n2. Envoyer les documents requis\n3. Passer un entretien', TRUE),
-        ('Bourse pour études en Génie Civil', 'Bourse partielle pour études de génie civil au Canada avec possibilité de stage.', 'Canada', 'Université de Montréal', 'Licence', 'Génie Civil', '10 000 CAD par an', '2024-07-15', 'Baccalauréat scientifique, bon niveau en mathématiques', '1. Créer un compte sur le portail de l''université\n2. Soumettre le dossier de candidature\n3. Attendre la réponse', TRUE)
-        ON CONFLICT DO NOTHING
-    ''')
-    
-    conn.commit()
-    cur.close()
-    conn.close()
-
-# Initialiser la base de données
-init_db()
+        print(f"❌ Erreur lors de l'initialisation de la base: {e}")
+        conn.rollback()
+    finally:
+        cur.close()
+        conn.close()
 
 # Routes principales
 @app.route('/')
@@ -174,13 +229,23 @@ def login_page():
 def register_page():
     return render_template('register.html')
 
-
+@app.route('/api/init-db')
+def init_database():
+    """Route pour initialiser la base de données manuellement"""
+    try:
+        init_db()
+        return jsonify({'success': True, 'message': 'Base de données initialisée'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/dashboard')
 @login_required
 def dashboard():
     # Récupérer les bourses depuis la base de données
     conn = get_db_connection()
+    if conn is None:
+        return "Erreur de connexion à la base de données", 500
+    
     cur = conn.cursor()
     
     try:
@@ -285,7 +350,7 @@ def api_add_bourse():
             if video_file and video_file.filename:
                 video_url = save_uploaded_file(video_file)
         
-        # Gérer les médias supplémentaires pour la procédure - CORRECTION ICI
+        # Gérer les médias supplémentaires pour la procédure
         procedure_medias = []
         if 'procedure_medias' in request.files:
             for file in request.files.getlist('procedure_medias'):
@@ -299,6 +364,9 @@ def api_add_bourse():
         
         # Insérer dans la base de données
         conn = get_db_connection()
+        if conn is None:
+            return jsonify({'success': False, 'message': 'Erreur de connexion à la base de données'}), 500
+        
         cur = conn.cursor()
         
         cur.execute('''
@@ -312,14 +380,12 @@ def api_add_bourse():
               image_url, video_url, procedure_medias_json))
         
         conn.commit()
-        bourse_id = cur.lastrowid
         cur.close()
         conn.close()
         
         return jsonify({
             'success': True, 
-            'message': 'Bourse ajoutée avec succès!',
-            'bourse_id': bourse_id
+            'message': 'Bourse ajoutée avec succès!'
         })
         
     except Exception as e:
@@ -340,6 +406,9 @@ def api_login():
         return jsonify({'success': False, 'message': 'Numéro WhatsApp et mot de passe requis'}), 400
     
     conn = get_db_connection()
+    if conn is None:
+        return jsonify({'success': False, 'message': 'Erreur de connexion à la base de données'}), 500
+    
     cur = conn.cursor()
     cur.execute('SELECT id, nom, prenom, numero_whatsapp, password, email, is_active, is_admin, date_inscription FROM users WHERE numero_whatsapp = %s', (numero_whatsapp,))
     user_data = cur.fetchone()
@@ -386,6 +455,9 @@ def api_register():
     
     # Vérifier si l'utilisateur existe déjà
     conn = get_db_connection()
+    if conn is None:
+        return jsonify({'success': False, 'message': 'Erreur de connexion à la base de données'}), 500
+    
     cur = conn.cursor()
     cur.execute('SELECT id FROM users WHERE numero_whatsapp = %s', (numero_whatsapp,))
     existing_user = cur.fetchone()
@@ -419,6 +491,9 @@ def api_register():
 @login_required
 def api_bourses():
     conn = get_db_connection()
+    if conn is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
     cur = conn.cursor()
     
     try:
@@ -466,6 +541,9 @@ def api_bourses():
 @login_required
 def api_bourse_detail(bourse_id):
     conn = get_db_connection()
+    if conn is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
     cur = conn.cursor()
     cur.execute('SELECT * FROM bourses WHERE id = %s', (bourse_id,))
     bourse_data = cur.fetchone()
@@ -475,23 +553,17 @@ def api_bourse_detail(bourse_id):
     if not bourse_data:
         return jsonify({'error': 'Bourse non trouvée'}), 404
     
-    # Parser les médias de procédure - CORRECTION ICI
+    # Parser les médias de procédure
     procedure_medias = []
     if bourse_data[13]:  # Index 13 pour procedure_medias
-        print(f"🔍 Raw procedure_medias: {bourse_data[13]}")
-        print(f"🔍 Type: {type(bourse_data[13])}")
-        
         try:
             if isinstance(bourse_data[13], str) and bourse_data[13].strip():
                 procedure_medias = json.loads(bourse_data[13])
             elif isinstance(bourse_data[13], (list, dict)):
                 procedure_medias = bourse_data[13]
-            print(f"✅ Médias parsés: {procedure_medias}")
         except json.JSONDecodeError as e:
-            print(f"❌ Erreur JSON: {e}")
             procedure_medias = []
         except Exception as e:
-            print(f"❌ Autre erreur: {e}")
             procedure_medias = []
     
     bourse = {
@@ -516,16 +588,9 @@ def api_bourse_detail(bourse_id):
 
 @app.route('/renseignement')
 def renseignement_page():
-    return render_template('renseignement.html')  
+    return render_template('renseignement.html')
 
-
-#Gestion des users
-
-
-from flask import jsonify, request
-from datetime import datetime, timedelta
-
-# Routes pour la gestion des utilisateurs
+# Gestion des utilisateurs
 @app.route('/admin/users')
 def admin_users_page():
     """Page de gestion des utilisateurs"""
@@ -536,6 +601,9 @@ def get_all_users():
     """Récupérer tous les utilisateurs"""
     try:
         conn = get_db_connection()
+        if conn is None:
+            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
+        
         cur = conn.cursor()
         cur.execute('''
             SELECT id, nom, prenom, numero_whatsapp, password, email, 
@@ -571,6 +639,9 @@ def validate_user(user_id):
     """Valider un utilisateur - Ajouter 1 mois à la souscription"""
     try:
         conn = get_db_connection()
+        if conn is None:
+            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
+        
         cur = conn.cursor()
         
         # Récupérer la date actuelle d'inscription
@@ -578,6 +649,8 @@ def validate_user(user_id):
         result = cur.fetchone()
         
         if not result:
+            cur.close()
+            conn.close()
             return jsonify({'success': False, 'error': 'Utilisateur non trouvé'})
         
         current_date = result[0]
@@ -599,6 +672,9 @@ def toggle_user_status(user_id):
     """Activer/Désactiver un utilisateur"""
     try:
         conn = get_db_connection()
+        if conn is None:
+            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
+        
         cur = conn.cursor()
         
         # Inverser le statut is_active
@@ -617,6 +693,9 @@ def delete_user(user_id):
     """Supprimer un utilisateur"""
     try:
         conn = get_db_connection()
+        if conn is None:
+            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
+        
         cur = conn.cursor()
         
         # Vérifier que l'utilisateur n'est pas admin
@@ -624,6 +703,8 @@ def delete_user(user_id):
         result = cur.fetchone()
         
         if result and result[0]:
+            cur.close()
+            conn.close()
             return jsonify({'success': False, 'error': 'Impossible de supprimer un administrateur'})
         
         # Supprimer l'utilisateur
@@ -636,9 +717,6 @@ def delete_user(user_id):
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
-
-
-
 
 @app.route('/api/admin/bourses', methods=['POST'])
 @login_required
@@ -659,40 +737,31 @@ def add_bourse():
         conditions = request.form.get('conditions')
         procedure_postulation = request.form.get('procedure_postulation')
         
-        print(f"📝 Données reçues: titre={titre}, pays={pays}")
-        
         # Gérer l'image principale
         image_url = None
         if 'image' in request.files:
             image_file = request.files['image']
             if image_file and image_file.filename != '':
-                print(f"📷 Image reçue: {image_file.filename}")
                 image_url = save_uploaded_file(image_file)
-                print(f"📷 Image sauvegardée: {image_url}")
         
         # Gérer la vidéo principale
         video_url = None
         if 'video' in request.files:
             video_file = request.files['video']
             if video_file and video_file.filename != '':
-                print(f"🎥 Vidéo reçue: {video_file.filename}")
                 video_url = save_uploaded_file(video_file)
-                print(f"🎥 Vidéo sauvegardée: {video_url}")
         
-        # Gérer les médias de procédure - CORRECTION ICI
+        # Gérer les médias de procédure
         procedure_medias = []
         
-        # Méthode 1: Via le champ multiple
+        # Via le champ multiple
         if 'procedure_medias' in request.files:
             procedure_files = request.files.getlist('procedure_medias')
-            print(f"📎 Nombre de fichiers 'procedure_medias': {len(procedure_files)}")
             
-            for i, media_file in enumerate(procedure_files):
+            for media_file in procedure_files:
                 if media_file and media_file.filename != '':
-                    print(f"📎 Média {i+1}: {media_file.filename} - {media_file.content_type}")
                     media_url = save_uploaded_file(media_file)
                     if media_url:
-                        # Déterminer le type de média
                         filename_lower = media_file.filename.lower()
                         is_video = filename_lower.endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm'))
                         is_image = filename_lower.endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'))
@@ -702,49 +771,18 @@ def add_bourse():
                         procedure_medias.append({
                             'url': media_url,
                             'type': media_type,
-                            'filename': media_file.filename,
-                            'index': i
+                            'filename': media_file.filename
                         })
-        
-        # Méthode 2: Via les champs individuels (fallback)
-        if not procedure_medias:
-            # Vérifier les fichiers individuels
-            i = 0
-            while True:
-                file_key = f'procedure_media_{i}'
-                if file_key in request.files:
-                    media_file = request.files[file_key]
-                    if media_file and media_file.filename != '':
-                        print(f"📎 Média individuel {i}: {media_file.filename}")
-                        media_url = save_uploaded_file(media_file)
-                        if media_url:
-                            filename_lower = media_file.filename.lower()
-                            is_video = filename_lower.endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm'))
-                            is_image = filename_lower.endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'))
-                            
-                            media_type = 'video' if is_video else 'image' if is_image else 'file'
-                            
-                            procedure_medias.append({
-                                'url': media_url,
-                                'type': media_type,
-                                'filename': media_file.filename,
-                                'index': i
-                            })
-                    i += 1
-                else:
-                    break
-        
-        print(f"📦 {len(procedure_medias)} médias de procédure récupérés")
         
         # Connexion à la base de données
         conn = get_db_connection()
+        if conn is None:
+            return jsonify({'success': False, 'error': 'Erreur de connexion à la base de données'}), 500
+        
         cur = conn.cursor()
         
         # Préparer la valeur procedure_medias
         procedure_medias_json = json.dumps(procedure_medias) if procedure_medias else None
-        
-        print(f"💾 Insertion dans la base de données...")
-        print(f"💾 procedure_medias: {procedure_medias_json}")
         
         # Insérer la bourse
         cur.execute('''
@@ -766,9 +804,7 @@ def add_bourse():
         return jsonify({'success': True, 'message': 'Bourse ajoutée avec succès'})
         
     except Exception as e:
-        print(f"❌ Erreur lors de l'ajout de la bourse: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"Erreur lors de l'ajout de la bourse: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/logout')
@@ -778,4 +814,7 @@ def api_logout():
     return jsonify({'success': True, 'message': 'Déconnexion réussie'})
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # N'appelez pas init_db() automatiquement au démarrage
+    # Laissez Railway gérer la base de données
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
