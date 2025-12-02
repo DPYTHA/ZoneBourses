@@ -8,6 +8,15 @@ from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 import uuid
 
+
+from models import (
+    get_db_connection, 
+    init_db, 
+    User, 
+    save_uploaded_file, 
+    allowed_file
+)
+
 app = Flask(__name__)
 
 # Configuration pour Railway
@@ -812,6 +821,8 @@ def add_bourse():
 def api_logout():
     logout_user()
     return jsonify({'success': True, 'message': 'Déconnexion réussie'})
+from models import create_debug_route
+create_debug_route(app)
 
 if __name__ == '__main__':
     # N'appelez pas init_db() automatiquement au démarrage
