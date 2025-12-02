@@ -3,18 +3,17 @@ import json
 from flask import Flask, request, redirect, url_for, session, jsonify, render_template
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 import psycopg2
-from urllib.parse import urlparse
 from datetime import datetime, timedelta
-from werkzeug.utils import secure_filename
 import uuid
 
-
+# Import depuis models.py corrigé
 from models import (
-    get_db_connection, 
-    init_db, 
     User, 
     save_uploaded_file, 
-    allowed_file
+    allowed_file,
+    save_multiple_files,
+    parse_procedure_medias,
+    create_debug_route
 )
 
 app = Flask(__name__)
@@ -24,66 +23,15 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'votre_cle_secrete_tres_
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
 
-# Configuration de la base de données pour Railway
-DATABASE_URL = os.environ.get('DATABASE_URL')
-
-if DATABASE_URL:
-    # Pour Railway (URL de connexion PostgreSQL)
-    url = urlparse(DATABASE_URL)
-    DB_CONFIG = {
-        'dbname': url.path[1:],
-        'user': url.username,
-        'password': url.password,
-        'host': url.hostname,
-        'port': url.port
-    }
-    print(f"✅ Configuration DB Railway détectée: {url.hostname}")
-else:
-    # Pour le développement local
-    DB_CONFIG = {
-        'dbname': 'Minizone_db',
-        'user': 'Zone_user',
-        'password': 'Pytha1991',
-        'host': 'localhost',
-        'port': '5432'
-    }
-    print("⚠️  Configuration DB locale")
-
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'mkv'}
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def save_uploaded_file(file):
-    if file and file.filename and file.filename != '':
-        if allowed_file(file.filename):
-            # Créer le dossier s'il n'existe pas
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            
-            # Générer un nom de fichier unique
-            file_ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
-            filename = f"{uuid.uuid4().hex}.{file_ext}" if file_ext else f"{uuid.uuid4().hex}"
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            
-            try:
-                file.save(filepath)
-                print(f"✅ Fichier sauvegardé: {filename} -> {filepath}")
-                return f"/static/uploads/{filename}"
-            except Exception as e:
-                print(f"❌ Erreur sauvegarde fichier: {e}")
-                return None
-        else:
-            print(f"❌ Format non autorisé: {file.filename}")
-            return None
-    return None
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'mkv', 'pdf', 'doc', 'docx'}
 
 # Configuration de Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login_page'
 
-class User(UserMixin):
+class FlaskUser(UserMixin):
+    """Classe User pour Flask-Login (version simplifiée)"""
     def __init__(self, id, nom, prenom, numero_whatsapp, password, email, is_active, is_admin, date_inscription):
         self.id = id
         self.nom = nom
@@ -101,24 +49,24 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    conn = get_db_connection()
-    if conn is None:
+    """Charge un utilisateur pour Flask-Login"""
+    try:
+        user = User.get_by_id(user_id)
+        if user:
+            # Convertir le User du models.py en FlaskUser pour Flask-Login
+            return FlaskUser(
+                user.id, user.nom, user.prenom, user.numero_whatsapp, 
+                user.password, user.email, user.is_active, 
+                user.is_admin, user.date_inscription
+            )
         return None
-    
-    cur = conn.cursor()
-    cur.execute('SELECT id, nom, prenom, numero_whatsapp, password, email, is_active, is_admin, date_inscription FROM users WHERE id = %s', (user_id,))
-    user_data = cur.fetchone()
-    cur.close()
-    conn.close()
-    
-    if user_data:
-        return User(*user_data)
-    return None
+    except Exception as e:
+        print(f"Erreur dans load_user: {e}")
+        return None
 
 def get_db_connection():
     """Établit une connexion à la base de données"""
     try:
-        # Utilisez DATABASE_URL pour Railway, sinon la config locale
         DATABASE_URL = os.environ.get('DATABASE_URL')
         if DATABASE_URL:
             # Pour Railway avec SSL
@@ -126,23 +74,29 @@ def get_db_connection():
             print("✅ Connexion à la DB Railway établie")
         else:
             # Pour le développement local
-            conn = psycopg2.connect(**DB_CONFIG)
+            conn = psycopg2.connect(
+                dbname='Minizone_db',
+                user='Zone_user',
+                password='Pytha1991',
+                host='localhost',
+                port='5432'
+            )
             print("✅ Connexion à la DB locale établie")
         return conn
     except Exception as e:
         print(f"❌ Erreur de connexion à la base de données: {e}")
         return None
 
-def init_db():
-    """Initialise la base de données avec les tables nécessaires"""
-    conn = get_db_connection()
-    if conn is None:
-        print("⚠️  Impossible de se connecter à la base de données, skip init_db")
-        return
-    
-    cur = conn.cursor()
-    
+@app.route('/init-db-manual')
+def init_db_manual():
+    """Initialisation manuelle de la base de données - À APPELER UNE FOIS SUR RAILWAY"""
     try:
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({'success': False, 'message': '❌ Impossible de se connecter à la DB'}), 500
+        
+        cur = conn.cursor()
+        
         # Création de la table utilisateurs
         cur.execute('''
             CREATE TABLE IF NOT EXISTS users (
@@ -180,20 +134,22 @@ def init_db():
             )
         ''')
         
-        # Ajouter la colonne procedure_medias si elle n'existe pas
+        # Ajouter les colonnes manquantes si nécessaire
         try:
-            cur.execute('''
-                ALTER TABLE bourses 
-                ADD COLUMN IF NOT EXISTS procedure_medias TEXT
-            ''')
+            cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='bourses' AND column_name='procedure_medias'")
+            if not cur.fetchone():
+                cur.execute('ALTER TABLE bourses ADD COLUMN procedure_medias TEXT')
+                print("✅ Colonne procedure_medias ajoutée")
         except Exception as e:
-            print(f"Note: {e}")
+            print(f"Note colonne procedure_medias: {e}")
         
-        # Ajouter la colonne is_active si elle n'existe pas
         try:
-            cur.execute('ALTER TABLE bourses ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE')
+            cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='bourses' AND column_name='is_active'")
+            if not cur.fetchone():
+                cur.execute('ALTER TABLE bourses ADD COLUMN is_active BOOLEAN DEFAULT TRUE')
+                print("✅ Colonne is_active ajoutée")
         except Exception as e:
-            print(f"Note: {e}")
+            print(f"Note colonne is_active: {e}")
         
         # Créer l'admin par défaut
         cur.execute('''
@@ -202,24 +158,33 @@ def init_db():
             ON CONFLICT (numero_whatsapp) DO NOTHING
         ''')
         
-        # Insérer des bourses d'exemple
-        cur.execute('''
-            INSERT INTO bourses (titre, description, pays, universite, niveau_etude, domaine_etude, montant_bourse, date_limite, conditions, procedure_postulation, is_active)
-            VALUES 
-            ('Bourse d''excellence en Informatique', 'Bourse complète pour étudier l''informatique en France avec tous les frais couverts.', 'France', 'Université Paris-Saclay', 'Master', 'Informatique', '15 000€ par an', '2024-06-30', 'Diplôme de licence en informatique, moyenne minimale de 14/20', '1. Remplir le formulaire en ligne\n2. Envoyer les documents requis\n3. Passer un entretien', TRUE),
-            ('Bourse pour études en Génie Civil', 'Bourse partielle pour études de génie civil au Canada avec possibilité de stage.', 'Canada', 'Université de Montréal', 'Licence', 'Génie Civil', '10 000 CAD par an', '2024-07-15', 'Baccalauréat scientifique, bon niveau en mathématiques', '1. Créer un compte sur le portail de l''université\n2. Soumettre le dossier de candidature\n3. Attendre la réponse', TRUE)
-            ON CONFLICT DO NOTHING
-        ''')
+        # Vérifier si des bourses existent déjà
+        cur.execute('SELECT COUNT(*) FROM bourses')
+        count = cur.fetchone()[0]
+        
+        if count == 0:
+            # Insérer des bourses d'exemple avec des dates futures
+            cur.execute('''
+                INSERT INTO bourses (titre, description, pays, universite, niveau_etude, domaine_etude, montant_bourse, date_limite, conditions, procedure_postulation, is_active)
+                VALUES 
+                ('Bourse d''excellence en Informatique', 'Bourse complète pour étudier l''informatique en France avec tous les frais couverts.', 'France', 'Université Paris-Saclay', 'Master', 'Informatique', '15 000€ par an', '2025-06-30', 'Diplôme de licence en informatique, moyenne minimale de 14/20', '1. Remplir le formulaire en ligne\n2. Envoyer les documents requis\n3. Passer un entretien', TRUE),
+                ('Bourse pour études en Génie Civil', 'Bourse partielle pour études de génie civil au Canada avec possibilité de stage.', 'Canada', 'Université de Montréal', 'Licence', 'Génie Civil', '10 000 CAD par an', '2025-07-15', 'Baccalauréat scientifique, bon niveau en mathématiques', '1. Créer un compte sur le portail de l''université\n2. Soumettre le dossier de candidature\n3. Attendre la réponse', TRUE),
+                ('Bourse de Médecine aux USA', 'Bourse complète pour étudier la médecine aux États-Unis incluant les frais de scolarité et logement.', 'États-Unis', 'Harvard University', 'Doctorat', 'Médecine', '50 000$ par an', '2025-05-31', 'Diplôme de pré-médecine, excellents résultats académiques, TOEFL 100+', '1. Soumettre le dossier complet\n2. Passer un examen d''entrée\n3. Entretien avec le comité', TRUE)
+            ''')
+            print(f"✅ {cur.rowcount} bourses d'exemple insérées")
         
         conn.commit()
-        print("✅ Base de données initialisée avec succès")
-        
-    except Exception as e:
-        print(f"❌ Erreur lors de l'initialisation de la base: {e}")
-        conn.rollback()
-    finally:
         cur.close()
         conn.close()
+        
+        return jsonify({
+            'success': True, 
+            'message': '✅ Base de données initialisée avec succès!',
+            'admin_account': 'Numéro: +2250710069791 | Mot de passe: admin123'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'❌ Erreur: {str(e)}'}), 500
 
 # Routes principales
 @app.route('/')
@@ -238,76 +203,78 @@ def login_page():
 def register_page():
     return render_template('register.html')
 
-@app.route('/api/init-db')
-def init_database():
-    """Route pour initialiser la base de données manuellement"""
-    try:
-        init_db()
-        return jsonify({'success': True, 'message': 'Base de données initialisée'})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Récupérer les bourses depuis la base de données
-    conn = get_db_connection()
-    if conn is None:
-        return "Erreur de connexion à la base de données", 500
-    
-    cur = conn.cursor()
-    
+    """Tableau de bord utilisateur avec toutes les bourses"""
     try:
-        cur.execute('SELECT * FROM bourses WHERE is_active = TRUE')
-    except Exception as e:
-        cur.execute('SELECT * FROM bourses')
-    
-    bourses_data = cur.fetchall()
-    cur.close()
-    conn.close()
-    
-    bourses = []
-    for bourse in bourses_data:
-        # Parser les médias de procédure
-        procedure_medias = []
-        if bourse[13]:  # procedure_medias est à l'index 13
-            try:
-                if isinstance(bourse[13], str):
-                    procedure_medias = json.loads(bourse[13])
-                elif isinstance(bourse[13], list):
-                    procedure_medias = bourse[13]
-            except json.JSONDecodeError:
-                procedure_medias = []
+        conn = get_db_connection()
+        if conn is None:
+            return "Erreur de connexion à la base de données", 500
         
-        bourses.append({
-            'id': bourse[0],
-            'titre': bourse[1],
-            'description': bourse[2],
-            'pays': bourse[3],
-            'universite': bourse[4],
-            'niveau_etude': bourse[5],
-            'domaine_etude': bourse[6],
-            'montant_bourse': bourse[7],
-            'date_limite': bourse[8].strftime('%d %B %Y') if bourse[8] else '',
-            'conditions': bourse[9],
-            'procedure_postulation': bourse[10],
-            'image_url': bourse[11],
-            'video_url': bourse[12],
-            'procedure_medias': procedure_medias
-        })
-    
-    # Passer les informations utilisateur au template
-    user_info = {
-        'id': current_user.id,
-        'nom': current_user.nom,
-        'prenom': current_user.prenom,
-        'email': current_user.email,
-        'numero_whatsapp': current_user.numero_whatsapp,
-        'is_admin': current_user.is_admin,
-        'date_inscription': current_user.date_inscription.strftime('%d/%m/%Y') if current_user.date_inscription else ''
-    }
-    
-    return render_template('dashboard.html', user=current_user, bourses=bourses, user_info=user_info)
+        cur = conn.cursor()
+        
+        # Récupérer toutes les bourses actives
+        cur.execute('SELECT * FROM bourses WHERE is_active = TRUE ORDER BY date_limite ASC')
+        bourses_data = cur.fetchall()
+        
+        # Récupérer les colonnes pour debug
+        cur.execute("""
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name='bourses' ORDER BY ordinal_position
+        """)
+        columns = [col[0] for col in cur.fetchall()]
+        
+        cur.close()
+        conn.close()
+        
+        print(f"📊 {len(bourses_data)} bourses trouvées")
+        print(f"📋 Colonnes bourses: {columns}")
+        
+        bourses = []
+        for bourse in bourses_data:
+            # Parser les médias de procédure
+            procedure_medias = []
+            if len(bourse) > 13 and bourse[13]:  # procedure_medias à l'index 13
+                procedure_medias = parse_procedure_medias(bourse[13])
+            
+            # Créer l'objet bourse
+            bourse_obj = {
+                'id': bourse[0],
+                'titre': bourse[1] if len(bourse) > 1 else 'Sans titre',
+                'description': bourse[2] if len(bourse) > 2 else '',
+                'pays': bourse[3] if len(bourse) > 3 else '',
+                'universite': bourse[4] if len(bourse) > 4 else '',
+                'niveau_etude': bourse[5] if len(bourse) > 5 else '',
+                'domaine_etude': bourse[6] if len(bourse) > 6 else '',
+                'montant_bourse': bourse[7] if len(bourse) > 7 else '',
+                'date_limite': bourse[8].strftime('%d %B %Y') if len(bourse) > 8 and bourse[8] else '',
+                'conditions': bourse[9] if len(bourse) > 9 else '',
+                'procedure_postulation': bourse[10] if len(bourse) > 10 else '',
+                'image_url': bourse[11] if len(bourse) > 11 else '',
+                'video_url': bourse[12] if len(bourse) > 12 else '',
+                'procedure_medias': procedure_medias,
+                'has_media': bool(bourse[11] if len(bourse) > 11 else '' or bourse[12] if len(bourse) > 12 else ''),
+                'has_procedure_medias': len(procedure_medias) > 0
+            }
+            bourses.append(bourse_obj)
+        
+        # Informations utilisateur
+        user_info = {
+            'id': current_user.id,
+            'nom': current_user.nom,
+            'prenom': current_user.prenom,
+            'email': current_user.email,
+            'numero_whatsapp': current_user.numero_whatsapp,
+            'is_admin': current_user.is_admin,
+            'date_inscription': current_user.date_inscription.strftime('%d/%m/%Y') if current_user.date_inscription else ''
+        }
+        
+        return render_template('dashboard.html', user=current_user, bourses=bourses, user_info=user_info)
+        
+    except Exception as e:
+        print(f"❌ Erreur dans dashboard: {e}")
+        return f"Erreur: {str(e)}", 500
 
 @app.route('/bourse/<int:bourse_id>')
 @login_required
@@ -321,85 +288,17 @@ def admin_page():
         return redirect(url_for('dashboard'))
     return render_template('admin.html')
 
-# Route pour ajouter une bourse
-@app.route('/api/bourses', methods=['POST'])
+@app.route('/renseignement')
+def renseignement_page():
+    return render_template('renseignement.html')
+
+@app.route('/admin/users')
 @login_required
-def api_add_bourse():
+def admin_users_page():
+    """Page de gestion des utilisateurs"""
     if not current_user.is_admin:
-        return jsonify({'success': False, 'message': 'Accès non autorisé'}), 403
-    
-    try:
-        # Récupérer les données du formulaire
-        titre = request.form.get('titre')
-        description = request.form.get('description')
-        pays = request.form.get('pays')
-        universite = request.form.get('universite')
-        niveau_etude = request.form.get('niveau_etude')
-        domaine_etude = request.form.get('domaine_etude')
-        montant_bourse = request.form.get('montant_bourse')
-        date_limite = request.form.get('date_limite')
-        conditions = request.form.get('conditions')
-        procedure_postulation = request.form.get('procedure_postulation')
-        
-        # Validation des champs obligatoires
-        if not all([titre, description, pays, universite, niveau_etude, domaine_etude, montant_bourse, date_limite]):
-            return jsonify({'success': False, 'message': 'Tous les champs obligatoires doivent être remplis'}), 400
-        
-        # Gérer l'upload de l'image principale
-        image_url = None
-        if 'image_url' in request.files:
-            image_file = request.files['image_url']
-            if image_file and image_file.filename:
-                image_url = save_uploaded_file(image_file)
-        
-        # Gérer l'upload de la vidéo
-        video_url = None
-        if 'video_url' in request.files:
-            video_file = request.files['video_url']
-            if video_file and video_file.filename:
-                video_url = save_uploaded_file(video_file)
-        
-        # Gérer les médias supplémentaires pour la procédure
-        procedure_medias = []
-        if 'procedure_medias' in request.files:
-            for file in request.files.getlist('procedure_medias'):
-                if file and file.filename and file.filename != '':
-                    media_url = save_uploaded_file(file)
-                    if media_url:
-                        procedure_medias.append(media_url)
-        
-        # Convertir la liste en JSON pour la base de données
-        procedure_medias_json = json.dumps(procedure_medias) if procedure_medias else '[]'
-        
-        # Insérer dans la base de données
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({'success': False, 'message': 'Erreur de connexion à la base de données'}), 500
-        
-        cur = conn.cursor()
-        
-        cur.execute('''
-            INSERT INTO bourses 
-            (titre, description, pays, universite, niveau_etude, domaine_etude, 
-             montant_bourse, date_limite, conditions, procedure_postulation, 
-             image_url, video_url, procedure_medias)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ''', (titre, description, pays, universite, niveau_etude, domaine_etude,
-              montant_bourse, date_limite, conditions, procedure_postulation,
-              image_url, video_url, procedure_medias_json))
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        return jsonify({
-            'success': True, 
-            'message': 'Bourse ajoutée avec succès!'
-        })
-        
-    except Exception as e:
-        print(f"Erreur lors de l'ajout de la bourse: {e}")
-        return jsonify({'success': False, 'message': f'Erreur lors de l\'ajout de la bourse: {str(e)}'}), 500
+        return redirect(url_for('dashboard'))
+    return render_template('admin_users.html')
 
 # Routes API
 @app.route('/api/login', methods=['POST'])
@@ -408,8 +307,8 @@ def api_login():
     if not data:
         return jsonify({'success': False, 'message': 'Données manquantes'}), 400
     
-    numero_whatsapp = data.get('numero_whatsapp')
-    password = data.get('password')
+    numero_whatsapp = data.get('numero_whatsapp', '').strip()
+    password = data.get('password', '').strip()
     
     if not numero_whatsapp or not password:
         return jsonify({'success': False, 'message': 'Numéro WhatsApp et mot de passe requis'}), 400
@@ -418,30 +317,37 @@ def api_login():
     if conn is None:
         return jsonify({'success': False, 'message': 'Erreur de connexion à la base de données'}), 500
     
-    cur = conn.cursor()
-    cur.execute('SELECT id, nom, prenom, numero_whatsapp, password, email, is_active, is_admin, date_inscription FROM users WHERE numero_whatsapp = %s', (numero_whatsapp,))
-    user_data = cur.fetchone()
-    cur.close()
-    conn.close()
-    
-    if user_data and user_data[4] == password:
-        user = User(*user_data)
-        if user.is_active:
-            login_user(user)
-            return jsonify({
-                'success': True,
-                'message': f'Bienvenue {user.prenom} {user.nom}!',
-                'user': {
-                    'id': user.id,
-                    'nom': user.nom,
-                    'prenom': user.prenom,
-                    'is_admin': user.is_admin
-                }
-            })
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            'SELECT id, nom, prenom, numero_whatsapp, password, email, is_active, is_admin, date_inscription FROM users WHERE numero_whatsapp = %s', 
+            (numero_whatsapp,)
+        )
+        user_data = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if user_data and user_data[5] == password:  # Index 5 pour password
+            user_obj = FlaskUser(*user_data)
+            if user_obj.is_active:
+                login_user(user_obj, remember=True)
+                return jsonify({
+                    'success': True,
+                    'message': f'Bienvenue {user_obj.prenom} {user_obj.nom}!',
+                    'user': {
+                        'id': user_obj.id,
+                        'nom': user_obj.nom,
+                        'prenom': user_obj.prenom,
+                        'is_admin': user_obj.is_admin
+                    }
+                })
+            else:
+                return jsonify({'success': False, 'message': 'Votre compte a été désactivé'}), 403
         else:
-            return jsonify({'success': False, 'message': 'Votre compte a été désactivé'}), 403
-    else:
-        return jsonify({'success': False, 'message': 'Numéro WhatsApp ou mot de passe incorrect'}), 401
+            return jsonify({'success': False, 'message': 'Numéro WhatsApp ou mot de passe incorrect'}), 401
+    except Exception as e:
+        print(f"Erreur login: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
 
 @app.route('/api/register', methods=['POST'])
 def api_register():
@@ -449,12 +355,12 @@ def api_register():
     if not data:
         return jsonify({'success': False, 'message': 'Données manquantes'}), 400
     
-    nom = data.get('nom')
-    prenom = data.get('prenom')
-    numero_whatsapp = data.get('numero_whatsapp')
-    email = data.get('email', '')
-    password = data.get('password')
-    confirm_password = data.get('confirm_password')
+    nom = data.get('nom', '').strip()
+    prenom = data.get('prenom', '').strip()
+    numero_whatsapp = data.get('numero_whatsapp', '').strip()
+    email = data.get('email', '').strip()
+    password = data.get('password', '').strip()
+    confirm_password = data.get('confirm_password', '').strip()
     
     if not all([nom, prenom, numero_whatsapp, password, confirm_password]):
         return jsonify({'success': False, 'message': 'Tous les champs obligatoires doivent être remplis'}), 400
@@ -467,19 +373,19 @@ def api_register():
     if conn is None:
         return jsonify({'success': False, 'message': 'Erreur de connexion à la base de données'}), 500
     
-    cur = conn.cursor()
-    cur.execute('SELECT id FROM users WHERE numero_whatsapp = %s', (numero_whatsapp,))
-    existing_user = cur.fetchone()
-    
-    if existing_user:
-        cur.close()
-        conn.close()
-        return jsonify({'success': False, 'message': 'Ce numéro WhatsApp est déjà utilisé'}), 409
-    
-    # Enregistrer l'utilisateur
     try:
+        cur = conn.cursor()
+        cur.execute('SELECT id FROM users WHERE numero_whatsapp = %s', (numero_whatsapp,))
+        existing_user = cur.fetchone()
+        
+        if existing_user:
+            cur.close()
+            conn.close()
+            return jsonify({'success': False, 'message': 'Ce numéro WhatsApp est déjà utilisé'}), 409
+        
+        # Enregistrer l'utilisateur
         cur.execute(
-            'INSERT INTO users (nom, prenom, numero_whatsapp, email, password) VALUES (%s, %s, %s, %s, %s)',
+            'INSERT INTO users (nom, prenom, numero_whatsapp, email, password, is_active) VALUES (%s, %s, %s, %s, %s, TRUE)',
             (nom, prenom, numero_whatsapp, email, password)
         )
         conn.commit()
@@ -491,123 +397,109 @@ def api_register():
             'message': 'Inscription réussie! Vous pouvez maintenant vous connecter.'
         })
     except Exception as e:
-        conn.rollback()
-        cur.close()
-        conn.close()
-        return jsonify({'success': False, 'message': 'Erreur lors de l\'inscription'}), 500
+        print(f"Erreur register: {e}")
+        if conn:
+            conn.rollback()
+            cur.close()
+            conn.close()
+        return jsonify({'success': False, 'message': f'Erreur lors de l\'inscription: {str(e)}'}), 500
 
 @app.route('/api/bourses')
 @login_required
 def api_bourses():
-    conn = get_db_connection()
-    if conn is None:
-        return jsonify({'error': 'Database connection failed'}), 500
-    
-    cur = conn.cursor()
-    
+    """API pour récupérer toutes les bourses"""
     try:
-        cur.execute('SELECT * FROM bourses WHERE is_active = TRUE')
-    except Exception as e:
-        cur.execute('SELECT * FROM bourses')
-    
-    bourses_data = cur.fetchall()
-    cur.close()
-    conn.close()
-    
-    bourses = []
-    for bourse in bourses_data:
-        # Parser les médias de procédure
-        procedure_medias = []
-        if bourse[13]:
-            try:
-                if isinstance(bourse[13], str):
-                    procedure_medias = json.loads(bourse[13])
-                elif isinstance(bourse[13], list):
-                    procedure_medias = bourse[13]
-            except json.JSONDecodeError:
-                procedure_medias = []
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({'error': 'Database connection failed'}), 500
         
-        bourses.append({
-            'id': bourse[0],
-            'titre': bourse[1],
-            'description': bourse[2],
-            'pays': bourse[3],
-            'universite': bourse[4],
-            'niveau_etude': bourse[5],
-            'domaine_etude': bourse[6],
-            'montant_bourse': bourse[7],
-            'date_limite': bourse[8].strftime('%d %B %Y') if bourse[8] else '',
-            'conditions': bourse[9],
-            'procedure_postulation': bourse[10],
-            'image_url': bourse[11],
-            'video_url': bourse[12],
-            'procedure_medias': procedure_medias
-        })
-    
-    return jsonify(bourses)
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM bourses WHERE is_active = TRUE ORDER BY date_limite ASC')
+        bourses_data = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        bourses = []
+        for bourse in bourses_data:
+            procedure_medias = []
+            if len(bourse) > 13 and bourse[13]:
+                procedure_medias = parse_procedure_medias(bourse[13])
+            
+            bourses.append({
+                'id': bourse[0],
+                'titre': bourse[1] if len(bourse) > 1 else '',
+                'description': bourse[2] if len(bourse) > 2 else '',
+                'pays': bourse[3] if len(bourse) > 3 else '',
+                'universite': bourse[4] if len(bourse) > 4 else '',
+                'niveau_etude': bourse[5] if len(bourse) > 5 else '',
+                'domaine_etude': bourse[6] if len(bourse) > 6 else '',
+                'montant_bourse': bourse[7] if len(bourse) > 7 else '',
+                'date_limite': bourse[8].strftime('%Y-%m-%d') if len(bourse) > 8 and bourse[8] else '',
+                'conditions': bourse[9] if len(bourse) > 9 else '',
+                'procedure_postulation': bourse[10] if len(bourse) > 10 else '',
+                'image_url': bourse[11] if len(bourse) > 11 else '',
+                'video_url': bourse[12] if len(bourse) > 12 else '',
+                'procedure_medias': procedure_medias,
+                'has_procedure_medias': len(procedure_medias) > 0
+            })
+        
+        return jsonify(bourses)
+    except Exception as e:
+        print(f"Erreur api_bourses: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/bourse/<int:bourse_id>')
 @login_required
 def api_bourse_detail(bourse_id):
-    conn = get_db_connection()
-    if conn is None:
-        return jsonify({'error': 'Database connection failed'}), 500
-    
-    cur = conn.cursor()
-    cur.execute('SELECT * FROM bourses WHERE id = %s', (bourse_id,))
-    bourse_data = cur.fetchone()
-    cur.close()
-    conn.close()
-    
-    if not bourse_data:
-        return jsonify({'error': 'Bourse non trouvée'}), 404
-    
-    # Parser les médias de procédure
-    procedure_medias = []
-    if bourse_data[13]:  # Index 13 pour procedure_medias
-        try:
-            if isinstance(bourse_data[13], str) and bourse_data[13].strip():
-                procedure_medias = json.loads(bourse_data[13])
-            elif isinstance(bourse_data[13], (list, dict)):
-                procedure_medias = bourse_data[13]
-        except json.JSONDecodeError as e:
-            procedure_medias = []
-        except Exception as e:
-            procedure_medias = []
-    
-    bourse = {
-        'id': bourse_data[0],
-        'titre': bourse_data[1],
-        'description': bourse_data[2],
-        'pays': bourse_data[3],
-        'universite': bourse_data[4],
-        'niveau_etude': bourse_data[5],
-        'domaine_etude': bourse_data[6],
-        'montant_bourse': bourse_data[7],
-        'date_limite': bourse_data[8].strftime('%d %B %Y') if bourse_data[8] else '',
-        'conditions': bourse_data[9],
-        'procedure_postulation': bourse_data[10],
-        'image_url': bourse_data[11],
-        'video_url': bourse_data[12],
-        'procedure_medias': procedure_medias,
-        'has_procedure_medias': len(procedure_medias) > 0
-    }
-    
-    return jsonify(bourse)
-
-@app.route('/renseignement')
-def renseignement_page():
-    return render_template('renseignement.html')
-
-# Gestion des utilisateurs
-@app.route('/admin/users')
-def admin_users_page():
-    """Page de gestion des utilisateurs"""
-    return render_template('admin_users.html')
+    """API pour récupérer les détails d'une bourse spécifique"""
+    try:
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM bourses WHERE id = %s', (bourse_id,))
+        bourse_data = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if not bourse_data:
+            return jsonify({'error': 'Bourse non trouvée'}), 404
+        
+        procedure_medias = []
+        if len(bourse_data) > 13 and bourse_data[13]:
+            procedure_medias = parse_procedure_medias(bourse_data[13])
+        
+        bourse = {
+            'id': bourse_data[0],
+            'titre': bourse_data[1] if len(bourse_data) > 1 else '',
+            'description': bourse_data[2] if len(bourse_data) > 2 else '',
+            'pays': bourse_data[3] if len(bourse_data) > 3 else '',
+            'universite': bourse_data[4] if len(bourse_data) > 4 else '',
+            'niveau_etude': bourse_data[5] if len(bourse_data) > 5 else '',
+            'domaine_etude': bourse_data[6] if len(bourse_data) > 6 else '',
+            'montant_bourse': bourse_data[7] if len(bourse_data) > 7 else '',
+            'date_limite': bourse_data[8].strftime('%d %B %Y') if len(bourse_data) > 8 and bourse_data[8] else '',
+            'conditions': bourse_data[9] if len(bourse_data) > 9 else '',
+            'procedure_postulation': bourse_data[10] if len(bourse_data) > 10 else '',
+            'image_url': bourse_data[11] if len(bourse_data) > 11 else '',
+            'video_url': bourse_data[12] if len(bourse_data) > 12 else '',
+            'procedure_medias': procedure_medias,
+            'has_procedure_medias': len(procedure_medias) > 0
+        }
+        
+        return jsonify(bourse)
+    except Exception as e:
+        print(f"Erreur api_bourse_detail: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/admin/users')
+@login_required
 def get_all_users():
-    """Récupérer tous les utilisateurs"""
+    """Récupérer tous les utilisateurs (admin seulement)"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Accès non autorisé'}), 403
+    
     try:
         conn = get_db_connection()
         if conn is None:
@@ -644,16 +536,18 @@ def get_all_users():
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/users/<int:user_id>/validate', methods=['POST'])
+@login_required
 def validate_user(user_id):
     """Valider un utilisateur - Ajouter 1 mois à la souscription"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Accès non autorisé'}), 403
+    
     try:
         conn = get_db_connection()
         if conn is None:
             return jsonify({'success': False, 'error': 'Database connection failed'}), 500
         
         cur = conn.cursor()
-        
-        # Récupérer la date actuelle d'inscription
         cur.execute('SELECT date_inscription FROM users WHERE id = %s', (user_id,))
         result = cur.fetchone()
         
@@ -662,10 +556,9 @@ def validate_user(user_id):
             conn.close()
             return jsonify({'success': False, 'error': 'Utilisateur non trouvé'})
         
-        current_date = result[0]
-        new_date = current_date + timedelta(days=30)  # Ajouter 1 mois
+        current_date = result[0] or datetime.now()
+        new_date = current_date + timedelta(days=30)
         
-        # Mettre à jour la date
         cur.execute('UPDATE users SET date_inscription = %s WHERE id = %s', (new_date, user_id))
         conn.commit()
         cur.close()
@@ -677,16 +570,18 @@ def validate_user(user_id):
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/users/<int:user_id>/toggle-status', methods=['POST'])
+@login_required
 def toggle_user_status(user_id):
     """Activer/Désactiver un utilisateur"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Accès non autorisé'}), 403
+    
     try:
         conn = get_db_connection()
         if conn is None:
             return jsonify({'success': False, 'error': 'Database connection failed'}), 500
         
         cur = conn.cursor()
-        
-        # Inverser le statut is_active
         cur.execute('UPDATE users SET is_active = NOT is_active WHERE id = %s', (user_id,))
         conn.commit()
         cur.close()
@@ -698,16 +593,18 @@ def toggle_user_status(user_id):
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
+@login_required
 def delete_user(user_id):
     """Supprimer un utilisateur"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Accès non autorisé'}), 403
+    
     try:
         conn = get_db_connection()
         if conn is None:
             return jsonify({'success': False, 'error': 'Database connection failed'}), 500
         
         cur = conn.cursor()
-        
-        # Vérifier que l'utilisateur n'est pas admin
         cur.execute('SELECT is_admin FROM users WHERE id = %s', (user_id,))
         result = cur.fetchone()
         
@@ -716,7 +613,6 @@ def delete_user(user_id):
             conn.close()
             return jsonify({'success': False, 'error': 'Impossible de supprimer un administrateur'})
         
-        # Supprimer l'utilisateur
         cur.execute('DELETE FROM users WHERE id = %s', (user_id,))
         conn.commit()
         cur.close()
@@ -730,21 +626,26 @@ def delete_user(user_id):
 @app.route('/api/admin/bourses', methods=['POST'])
 @login_required
 def add_bourse():
+    """Ajouter une nouvelle bourse (admin seulement)"""
     if not current_user.is_admin:
         return jsonify({'success': False, 'error': 'Accès non autorisé'}), 403
     
     try:
         # Récupérer les données de base
-        titre = request.form.get('titre')
-        description = request.form.get('description')
-        pays = request.form.get('pays')
-        universite = request.form.get('universite')
-        niveau_etude = request.form.get('niveau_etude')
-        domaine_etude = request.form.get('domaine_etude')
-        montant_bourse = request.form.get('montant_bourse')
-        date_limite = request.form.get('date_limite')
-        conditions = request.form.get('conditions')
-        procedure_postulation = request.form.get('procedure_postulation')
+        titre = request.form.get('titre', '').strip()
+        description = request.form.get('description', '').strip()
+        pays = request.form.get('pays', '').strip()
+        universite = request.form.get('universite', '').strip()
+        niveau_etude = request.form.get('niveau_etude', '').strip()
+        domaine_etude = request.form.get('domaine_etude', '').strip()
+        montant_bourse = request.form.get('montant_bourse', '').strip()
+        date_limite = request.form.get('date_limite', '').strip()
+        conditions = request.form.get('conditions', '').strip()
+        procedure_postulation = request.form.get('procedure_postulation', '').strip()
+        
+        # Validation des champs obligatoires
+        if not all([titre, description, pays, universite, niveau_etude, domaine_etude, montant_bourse, date_limite]):
+            return jsonify({'success': False, 'error': 'Tous les champs obligatoires doivent être remplis'}), 400
         
         # Gérer l'image principale
         image_url = None
@@ -762,26 +663,9 @@ def add_bourse():
         
         # Gérer les médias de procédure
         procedure_medias = []
-        
-        # Via le champ multiple
         if 'procedure_medias' in request.files:
             procedure_files = request.files.getlist('procedure_medias')
-            
-            for media_file in procedure_files:
-                if media_file and media_file.filename != '':
-                    media_url = save_uploaded_file(media_file)
-                    if media_url:
-                        filename_lower = media_file.filename.lower()
-                        is_video = filename_lower.endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm'))
-                        is_image = filename_lower.endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'))
-                        
-                        media_type = 'video' if is_video else 'image' if is_image else 'file'
-                        
-                        procedure_medias.append({
-                            'url': media_url,
-                            'type': media_type,
-                            'filename': media_file.filename
-                        })
+            procedure_medias = save_multiple_files(procedure_files)
         
         # Connexion à la base de données
         conn = get_db_connection()
@@ -800,17 +684,23 @@ def add_bourse():
              montant_bourse, date_limite, conditions, procedure_postulation, 
              image_url, video_url, procedure_medias, is_active)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)
+            RETURNING id
         ''', (
             titre, description, pays, universite, niveau_etude, domaine_etude,
             montant_bourse, date_limite, conditions, procedure_postulation,
             image_url, video_url, procedure_medias_json
         ))
         
+        new_id = cur.fetchone()[0]
         conn.commit()
         cur.close()
         conn.close()
         
-        return jsonify({'success': True, 'message': 'Bourse ajoutée avec succès'})
+        return jsonify({
+            'success': True, 
+            'message': 'Bourse ajoutée avec succès',
+            'bourse_id': new_id
+        })
         
     except Exception as e:
         print(f"Erreur lors de l'ajout de la bourse: {e}")
@@ -819,13 +709,73 @@ def add_bourse():
 @app.route('/api/logout')
 @login_required
 def api_logout():
+    """Déconnexion"""
     logout_user()
     return jsonify({'success': True, 'message': 'Déconnexion réussie'})
-from models import create_debug_route
+
+# Routes de debug
+@app.route('/debug/db-check')
+def debug_db_check():
+    """Vérifier l'état de la base de données"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'No DB connection'}), 500
+        
+        cur = conn.cursor()
+        
+        # Vérifier les tables
+        cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+        tables = cur.fetchall()
+        
+        # Compter les bourses
+        cur.execute("SELECT COUNT(*) FROM bourses")
+        bourses_count = cur.fetchone()[0]
+        
+        # Vérifier les colonnes de bourses
+        cur.execute("""
+            SELECT column_name, data_type, ordinal_position
+            FROM information_schema.columns
+            WHERE table_name = 'bourses'
+            ORDER BY ordinal_position
+        """)
+        columns = cur.fetchall()
+        
+        # Afficher quelques bourses
+        cur.execute("SELECT id, titre, is_active FROM bourses ORDER BY id DESC LIMIT 5")
+        sample_bourses = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'database_url': bool(os.environ.get('DATABASE_URL')),
+            'tables': [t[0] for t in tables],
+            'bourses_count': bourses_count,
+            'bourses_columns': [
+                {'position': col[2], 'name': col[0], 'type': col[1]} 
+                for col in columns
+            ],
+            'sample_bourses': [
+                {'id': b[0], 'titre': b[1], 'is_active': b[2]}
+                for b in sample_bourses
+            ]
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Ajouter les routes de debug depuis models.py
 create_debug_route(app)
 
 if __name__ == '__main__':
-    # N'appelez pas init_db() automatiquement au démarrage
-    # Laissez Railway gérer la base de données
+    # Créer le dossier uploads s'il n'existe pas
+    os.makedirs('static/uploads', exist_ok=True)
+    
     port = int(os.environ.get('PORT', 5000))
+    print(f"🚀 Application démarrée sur le port {port}")
+    print(f"📁 Dossier upload: {app.config['UPLOAD_FOLDER']}")
+    print(f"🔐 Secret key: {'Défini' if app.config['SECRET_KEY'] else 'Non défini'}")
+    print(f"🌐 Railway DB: {'Oui' if os.environ.get('DATABASE_URL') else 'Non (mode local)'}")
+    
     app.run(host='0.0.0.0', port=port, debug=False)
