@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>À Propos - ZoneBourse</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #1a56db;
+            --light-blue: #3b82f6;
+            --dark-blue: #1e40af;
+            --accent-orange: #f59e0b;
+            --light-bg: #f8fafc;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            color: var(--text-dark);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        
+        .navbar-custom {
+            background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
+            box-shadow: 0 4px 12px rgba(26, 86, 219, 0.15);
+        }
+        
+        .hero-section {
+            background: linear-gradient(rgba(26, 86, 219, 0.9), rgba(30, 64, 175, 0.9)), 
+                        url('https://images.unsplash.com/photo-1450101499163-c8848c66ca85?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 100px 0;
+            margin-bottom: 60px;
+        }
+        
+        .section-title {
+            color: var(--primary-blue);
+            position: relative;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: var(--accent-orange);
+            border-radius: 2px;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            transition: transform 0.3s, box-shadow 0.3s;
+            height: 100%;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(26, 86, 219, 0.1);
+        }
+        
+        .feature-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--light-blue), var(--primary-blue));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .feature-icon i {
+            font-size: 28px;
+            color: white;
+        }
+        
+        .stats-section {
+            background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
+            color: white;
+            padding: 60px 0;
+            border-radius: 16px;
+            margin: 60px 0;
+        }
+        
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .team-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s;
+        }
+        
+        .team-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        .team-img {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 5px solid white;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            object-fit: cover;
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(26, 86, 219, 0.3);
+        }
+        
+        .highlight {
+            color: var(--primary-blue);
+            font-weight: 600;
+        }
+        
+        .contact-info {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            border-left: 4px solid var(--accent-orange);
+        }
+        
+        .footer {
+            background: var(--dark-blue);
+            color: white;
+            padding: 40px 0;
+            margin-top: 60px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-graduation-cap me-2"></i>
+                <strong>ZoneBourse</strong>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard"><i class="fas fa-home me-1"></i> Accueil</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/about"><i class="fas fa-info-circle me-1"></i> À Propos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/opportunities"><i class="fas fa-briefcase me-1"></i> Opportunités</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-outline-light btn-sm ms-2" href="/login">
+                            <i class="fas fa-sign-in-alt me-1"></i> Connexion
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section text-center">
+        <div class="container">
+            <h1 class="display-4 fw-bold mb-3">À Propos de ZoneBourse</h1>
+            <p class="lead mb-4">Votre passerelle vers les opportunités éducatives internationales</p>
+            <a href="#mission" class="btn btn-light btn-lg px-4">
+                <i class="fas fa-arrow-down me-2"></i>Découvrir notre mission
+            </a>
+        </div>
+    </section>
+
+    <!-- Mission Section -->
+    <section id="mission" class="py-5">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-5 mb-lg-0">
+                    <h2 class="section-title">Notre Mission</h2>
+                    <p class="lead mb-4">
+                        Chez <span class="highlight">ZoneBourse</span>, nous croyons que l'éducation est un droit fondamental et un puissant levier de transformation sociale. Notre mission est de démocratiser l'accès aux opportunités éducatives internationales.
+                    </p>
+                    <p class="mb-4">
+                        Nous connectons les étudiants talentueux aux meilleures opportunités de bourses d'études à travers le monde, en simplifiant les processus complexes d'admission et de financement.
+                    </p>
+                    <div class="d-grid gap-2 d-sm-flex">
+                        <a href="/register" class="btn btn-primary-custom">
+                            <i class="fas fa-user-plus me-2"></i>Rejoindre la communauté
+                        </a>
+                        <a href="/opportunities" class="btn btn-outline-primary">
+                            <i class="fas fa-search me-2"></i>Explorer les opportunités
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                         alt="Étudiants internationaux" 
+                         class="img-fluid rounded-3 shadow-lg">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="section-title d-inline-block">Ce que nous offrons</h2>
+                <p class="text-muted">Des services complets pour votre réussite académique</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-search-dollar"></i>
+                        </div>
+                        <h4>Recherche de Bourses</h4>
+                        <p class="text-muted">
+                            Base de données exhaustive des bourses d'études internationales, mises à jour quotidiennement.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <h4>Accompagnement</h4>
+                        <p class="text-muted">
+                            Guides détaillés et assistance pour les procédures d'admission et de demande de bourse.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h4>Communauté</h4>
+                        <p class="text-muted">
+                            Réseau d'étudiants et d'anciens pour le partage d'expériences et d'opportunités.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics -->
+    <section class="stats-section">
+        <div class="container text-center">
+            <div class="row">
+                <div class="col-md-3 mb-4">
+                    <div class="stat-number">500+</div>
+                    <p>Bourses disponibles</p>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="stat-number">45+</div>
+                    <p>Pays couverts</p>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="stat-number">10K+</div>
+                    <p>Étudiants accompagnés</p>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="stat-number">95%</div>
+                    <p>Taux de satisfaction</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="section-title d-inline-block">Notre Fondateur</h2>
+                <p class="text-muted">L'esprit derrière ZoneBourse</p>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="team-card text-center p-5">
+                        <!-- REMPLACEZ CETTE URL PAR VOTRE PHOTO -->
+                        <img src="/static/images/profil.jpg" 
+                             alt="Moua-Etchi" 
+                             class="team-img mb-4">
+                        
+                        <h3 class="mb-2">[MOUA-ETCHI OLIVIER]</h3>
+                        <p class="text-accent-orange fw-bold mb-3" style="color: var(--accent-orange);">
+                            <!-- REMPLACEZ PAR VOTRE PROFESSION -->
+                            [Ingenieur Data-Scientist [Dev Machine Learning and AI]] <br>
+                            Prof-Mathematics [Probabilites-Statistics].
+                        </p>
+                        
+                        <p class="mb-4">
+                            Passionné par l'éducation et les opportunités internationales, [MOUA-ETCHI a créé ZoneBourse avec la vision de rendre l'éducation supérieure accessible à tous. Avec 8 années d'expérience dans le domaine des bourses d'études et des admissions internationales, il s'engage à aider les étudiants à réaliser leurs rêves académiques.
+                        </p>
+                        
+                        <div class="contact-info mt-4">
+                            <h5 class="mb-3">Contact</h5>
+                            <div class="row text-start">
+                                <div class="col-md-6 mb-2">
+                                    <i class="fas fa-envelope text-primary me-2"></i>
+                                    pythamoua@gmail.com
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <i class="fas fa-phone text-primary me-2"></i>
+                                    +7 9879040719
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <i class="fab fa-linkedin text-primary me-2"></i>
+                                    linkedin.com/in/A.mouaetchi
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <i class="fas fa-globe text-primary me-2"></i>
+                                    pythacademy.it.net
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact CTA -->
+    <section class="py-5 bg-light">
+        <div class="container text-center">
+            <h2 class="mb-4">Prêt à transformer votre avenir académique ?</h2>
+            <p class="lead mb-4">Rejoignez des milliers d'étudiants qui ont déjà trouvé leur opportunité idéale grâce à ZoneBourse.</p>
+            <a href="/register" class="btn btn-primary-custom btn-lg px-5">
+                <i class="fas fa-rocket me-2"></i>Commencer maintenant
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <h4 class="mb-3">
+                        <i class="fas fa-graduation-cap me-2"></i>ZoneBourse
+                    </h4>
+                    <p>Votre compagnon pour les études internationales. Trouvez, postulez, réussissez.</p>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <h5 class="mb-3">Liens rapides</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/" class="text-light text-decoration-none">Accueil</a></li>
+                        <li><a href="/about" class="text-light text-decoration-none">À Propos</a></li>
+                        <li><a href="/opportunities" class="text-light text-decoration-none">Opportunités</a></li>
+                        <li><a href="/contact" class="text-light text-decoration-none">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <h5 class="mb-3">Contact</h5>
+                    <p class="mb-1">
+                        <i class="fas fa-map-marker-alt me-2"></i> [Votre adresse]
+                    </p>
+                    <p class="mb-1">
+                        <i class="fas fa-phone me-2"></i> [Votre téléphone]
+                    </p>
+                    <p class="mb-0">
+                        <i class="fas fa-envelope me-2"></i> [contact@zonebourse.com]
+                    </p>
+                </div>
+            </div>
+            <hr class="my-4" style="border-color: rgba(255,255,255,0.1);">
+            <div class="text-center">
+                <p class="mb-0">&copy; 2024 ZoneBourse. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Animation simple au défilement
+        document.addEventListener('DOMContentLoaded', function() {
+            const observerOptions = {
+                threshold: 0.1
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+            
+            // Observer les cartes et sections
+            document.querySelectorAll('.feature-card, .team-card').forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.5s, transform 0.5s';
+                observer.observe(card);
+            });
+        });
+    </script>
+</body>
+</html>
