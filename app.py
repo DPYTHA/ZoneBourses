@@ -86,7 +86,6 @@ except Exception as e:
     # Ne pas lever l'exception pour éviter de bloquer le démarrage
 
 print("✅ Initialisation de la base terminée", file=sys.stderr)
-.
 
 # Importer Cloudinary APRÈS avoir configuré l'application
 try:
