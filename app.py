@@ -9,6 +9,7 @@ import sys
 app = Flask(__name__)
 app.config.from_object(Config)
 app.secret_key = app.config['SECRET_KEY']  # Important pour les sessions
+db = SQLAlchemy(app)
 
 # Importer Cloudinary APRÈS avoir configuré l'application
 try:
@@ -36,6 +37,7 @@ except ImportError:
     print("⚠️ Module Cloudinary non installé. L'upload d'images sera désactivé.", file=sys.stderr)
     # Définir des fonctions de secours
     cloudinary = None
+
 
 # Modèle utilisateur
 class User(db.Model):
