@@ -29,9 +29,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# ... votre code jusqu'à cette ligne ...
 
-db = SQLAlchemy(app)
 
 # ===== AJOUTEZ CE BLOC =====
 # Initialisation automatique de la base de données
