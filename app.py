@@ -29,62 +29,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-
-
-# ===== AJOUTEZ CE BLOC =====
-# Initialisation automatique de la base de données
-print("🚀 Initialisation de la base de données...", file=sys.stderr)
-try:
-    with app.app_context():
-        # Créer toutes les tables
-        db.create_all()
-        print("✅ Tables SQLAlchemy créées", file=sys.stderr)
-        
-        # Vérifier/créer l'utilisateur admin
-        admin = User.query.filter_by(email=app.config['ADMIN_EMAIL']).first()
-        if not admin:
-            admin = User(
-                nom='Admin',
-                prenom='System',
-                numero='+7 9879040719',
-                email=app.config['ADMIN_EMAIL'],
-                password=app.config['ADMIN_PASSWORD'],
-                is_admin=True,
-                is_active=True,
-                subscription_days=9999  # Admin a accès illimité
-            )
-            db.session.add(admin)
-            db.session.commit()
-            print(f"✅ Compte admin créé: {app.config['ADMIN_EMAIL']}", file=sys.stderr)
-        else:
-            print(f"✅ Compte admin existant: {admin.email}", file=sys.stderr)
-        
-        # Créer des opportunités d'exemple si vide
-        if Opportunity.query.count() == 0:
-            opportunities = [
-                Opportunity(
-                    title='Bourse Complète',
-                    type='bourse',
-                    description='Bourse d\'études complète pour programmes universitaires',
-                    pays='France, Allemagne, Canada',
-                    montant='1,18€ / mois',
-                    is_featured=False
-                ),
-                # ... (ajoutez toutes vos opportunités ici)
-            ]
-            for opp in opportunities:
-                db.session.add(opp)
-            db.session.commit()
-            print(f"✅ {len(opportunities)} opportunités créées", file=sys.stderr)
-        else:
-            print(f"✅ {Opportunity.query.count()} opportunités existantes", file=sys.stderr)
-            
-except Exception as e:
-    print(f"❌ ERREUR lors de l'initialisation: {str(e)}", file=sys.stderr)
-    # Ne pas lever l'exception pour éviter de bloquer le démarrage
-
-print("✅ Initialisation de la base terminée", file=sys.stderr)
-
 # Importer Cloudinary APRÈS avoir configuré l'application
 try:
     import cloudinary
@@ -153,6 +97,60 @@ class Opportunity(db.Model):
     video_url = db.Column(db.String(500))
     
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+# ===== AJOUTEZ CE BLOC =====
+# Initialisation automatique de la base de données
+print("🚀 Initialisation de la base de données...", file=sys.stderr)
+try:
+    with app.app_context():
+        # Créer toutes les tables
+        db.create_all()
+        print("✅ Tables SQLAlchemy créées", file=sys.stderr)
+        
+        # Vérifier/créer l'utilisateur admin
+        admin = User.query.filter_by(email=app.config['ADMIN_EMAIL']).first()
+        if not admin:
+            admin = User(
+                nom='Admin',
+                prenom='System',
+                numero='+7 9879040719',
+                email=app.config['ADMIN_EMAIL'],
+                password=app.config['ADMIN_PASSWORD'],
+                is_admin=True,
+                is_active=True,
+                subscription_days=9999  # Admin a accès illimité
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print(f"✅ Compte admin créé: {app.config['ADMIN_EMAIL']}", file=sys.stderr)
+        else:
+            print(f"✅ Compte admin existant: {admin.email}", file=sys.stderr)
+        
+        # Créer des opportunités d'exemple si vide
+        if Opportunity.query.count() == 0:
+            opportunities = [
+                Opportunity(
+                    title='Bourse Complète',
+                    type='bourse',
+                    description='Bourse d\'études complète pour programmes universitaires',
+                    pays='France, Allemagne, Canada',
+                    montant='1,18€ / mois',
+                    is_featured=False
+                ),
+                # ... (ajoutez toutes vos opportunités ici)
+            ]
+            for opp in opportunities:
+                db.session.add(opp)
+            db.session.commit()
+            print(f"✅ {len(opportunities)} opportunités créées", file=sys.stderr)
+        else:
+            print(f"✅ {Opportunity.query.count()} opportunités existantes", file=sys.stderr)
+            
+except Exception as e:
+    print(f"❌ ERREUR lors de l'initialisation: {str(e)}", file=sys.stderr)
+    # Ne pas lever l'exception pour éviter de bloquer le démarrage
+
+print("✅ Initialisation de la base terminée", file=sys.stderr)
+
 
 # Initialisation de la base
 def init_db():
