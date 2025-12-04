@@ -3,21 +3,39 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, timezone
 from config import Config
 import os
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
+import sys
 
-# Configuration Cloudinary
-cloudinary.config(
-    cloud_name = Config.CLOUDINARY_CLOUD_NAME,
-    api_key = Config.CLOUDINARY_API_KEY,
-    api_secret = Config.CLOUDINARY_API_SECRET,
-    secure = True
-)
+# Créer l'application Flask d'abord
 app = Flask(__name__)
 app.config.from_object(Config)
 app.secret_key = app.config['SECRET_KEY']  # Important pour les sessions
-db = SQLAlchemy(app)
+
+# Importer Cloudinary APRÈS avoir configuré l'application
+try:
+    import cloudinary
+    import cloudinary.uploader
+    import cloudinary.api
+    
+    # Configuration Cloudinary (uniquement si les variables existent)
+    if all([
+        app.config.get('CLOUDINARY_CLOUD_NAME'),
+        app.config.get('CLOUDINARY_API_KEY'), 
+        app.config.get('CLOUDINARY_API_SECRET')
+    ]):
+        cloudinary.config(
+            cloud_name = app.config['CLOUDINARY_CLOUD_NAME'],
+            api_key = app.config['CLOUDINARY_API_KEY'],
+            api_secret = app.config['CLOUDINARY_API_SECRET'],
+            secure = True
+        )
+        print("✅ Cloudinary configuré avec succès", file=sys.stderr)
+    else:
+        print("⚠️ Variables Cloudinary manquantes. L'upload d'images sera désactivé.", file=sys.stderr)
+        
+except ImportError:
+    print("⚠️ Module Cloudinary non installé. L'upload d'images sera désactivé.", file=sys.stderr)
+    # Définir des fonctions de secours
+    cloudinary = None
 
 # Modèle utilisateur
 class User(db.Model):
