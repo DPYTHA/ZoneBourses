@@ -3,517 +3,1079 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Utilisateurs - Admin</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Gestion des utilisateurs - ZoneBourse Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --primary-blue: #3B82F6;
+            --light-blue: #EFF6FF;
+            --dark-blue: #1E40AF;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --gray-100: #F3F4F6;
+            --gray-200: #E5E7EB;
+            --gray-700: #374151;
+            --gray-900: #111827;
+        }
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: 'Poppins', sans-serif;
+            background: #f8fafc;
+            color: var(--gray-900);
         }
-
+        
         .admin-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            overflow: hidden;
+            display: flex;
+            min-height: 100vh;
         }
-
-        .admin-header {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: white;
+            border-right: 1px solid var(--gray-200);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .logo {
+            padding: 0 1.5rem 2rem;
+            border-bottom: 1px solid var(--gray-200);
+            margin-bottom: 2rem;
+        }
+        
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .logo span {
+            color: var(--primary-blue);
+        }
+        
+        .nav-links {
+            padding: 0 1rem;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--gray-700);
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .nav-item:hover, .nav-item.active {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 2rem;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: var(--primary-blue);
             color: white;
-            padding: 30px;
-            text-align: center;
         }
-
-        .admin-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+        
+        .btn-primary:hover {
+            background: var(--dark-blue);
+            transform: translateY(-2px);
         }
-
-        .admin-header p {
-            opacity: 0.9;
-            font-size: 1.1rem;
+        
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-700);
         }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 20px;
-            background: #f8f9fa;
+        
+        .btn-secondary:hover {
+            background: var(--gray-200);
         }
-
-        .stat-card {
+        
+        /* Table */
+        .table-container {
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
-        .stat-label {
-            color: #7f8c8d;
-            margin-top: 5px;
-        }
-
-        .users-table-container {
-            padding: 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid var(--gray-200);
+            margin-bottom: 2rem;
             overflow-x: auto;
         }
-
-        .users-table {
+        
+        table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            min-width: 1200px;
         }
-
-        .users-table th {
-            background: #34495e;
-            color: white;
-            padding: 15px;
+        
+        th {
+            background: var(--gray-100);
+            padding: 1rem;
             text-align: left;
             font-weight: 600;
+            color: var(--gray-700);
+            border-bottom: 1px solid var(--gray-200);
         }
-
-        .users-table td {
-            padding: 15px;
-            border-bottom: 1px solid #ecf0f1;
+        
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+            color: var(--gray-700);
         }
-
-        .users-table tr:hover {
-            background: #f8f9fa;
+        
+        tr:hover {
+            background: var(--gray-100);
         }
-
-        .status-badge {
-            padding: 5px 12px;
+        
+        .badge {
+            padding: 0.25rem 0.75rem;
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             font-weight: 600;
         }
-
-        .status-active {
-            background: #d4edda;
-            color: #155724;
+        
+        .badge.admin {
+            background: #DBEAFE;
+            color: var(--primary-blue);
         }
-
-        .status-inactive {
-            background: #f8d7da;
-            color: #721c24;
+        
+        .badge.user {
+            background: #D1FAE5;
+            color: var(--success);
         }
-
-        .btn {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
             cursor: pointer;
+        }
+        
+        .status-badge.active {
+            background: #D1FAE5;
+            color: var(--success);
+        }
+        
+        .status-badge.inactive {
+            background: #FEE2E2;
+            color: var(--danger);
+        }
+        
+        .subscription-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
             font-weight: 600;
-            transition: all 0.3s ease;
-            margin: 2px;
         }
-
-        .btn-danger {
-            background: #e74c3c;
-            color: white;
+        
+        .subscription-badge.valid {
+            background: #D1FAE5;
+            color: var(--success);
         }
-
-        .btn-danger:hover {
-            background: #c0392b;
+        
+        .subscription-badge.expired {
+            background: #FEE2E2;
+            color: var(--danger);
         }
-
-        .btn-success {
-            background: #27ae60;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #219a52;
-        }
-
-        .btn-warning {
-            background: #f39c12;
-            color: white;
-        }
-
-        .btn-warning:hover {
-            background: #d68910;
-        }
-
-        .btn-info {
-            background: #3498db;
-            color: white;
-        }
-
-        .btn-info:hover {
-            background: #2980b9;
-        }
-
+        
         .action-buttons {
             display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-width: 200px;
         }
-
-        .search-box {
-            margin: 20px;
+        
+        .btn-sm {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.75rem;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+        }
+        
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #D97706;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #DC2626;
+        }
+        
+        .btn-info {
+            background: var(--primary-blue);
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: var(--dark-blue);
+        }
+        
+        /* Search Bar */
+        .search-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid var(--gray-200);
+        }
+        
+        .search-bar {
             display: flex;
-            gap: 10px;
+            gap: 1rem;
+            align-items: center;
         }
-
+        
         .search-input {
             flex: 1;
-            padding: 12px;
-            border: 2px solid #bdc3c7;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--gray-200);
             border-radius: 8px;
             font-size: 1rem;
         }
-
-        .search-btn {
-            padding: 12px 20px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 8px;
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+        
+        .filters {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-tag {
+            padding: 0.5rem 1rem;
+            background: var(--gray-100);
+            border: 1px solid var(--gray-200);
+            border-radius: 20px;
+            font-size: 0.875rem;
+            color: var(--gray-700);
             cursor: pointer;
-            font-weight: 600;
         }
-
-        .search-btn:hover {
-            background: #2980b9;
-        }
-
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            background: #27ae60;
+        
+        .filter-tag.active {
+            background: var(--primary-blue);
             color: white;
+            border-color: var(--primary-blue);
+        }
+        
+        /* Stats */
+        .stats-bar {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            background: white;
+            padding: 1rem 1.5rem;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 1000;
+            border: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        
+        .stat-icon.total { background: #DBEAFE; color: var(--primary-blue); }
+        .stat-icon.active { background: #D1FAE5; color: var(--success); }
+        .stat-icon.admin { background: #FEF3C7; color: var(--warning); }
+        .stat-icon.subscribed { background: #E0E7FF; color: #8B5CF6; }
+        
+        .stat-info h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        
+        .stat-info p {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+        
+        .flash-messages {
+            margin-bottom: 2rem;
+        }
+        
+        .flash {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
             animation: slideIn 0.3s ease;
         }
-
+        
+        .flash.success {
+            background: #D1FAE5;
+            color: #065F46;
+            border-left: 4px solid var(--success);
+        }
+        
+        .flash.error {
+            background: #FEE2E2;
+            color: #991B1B;
+            border-left: 4px solid var(--danger);
+        }
+        
         @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
-
-        .back-btn {
-            display: inline-block;
-            margin: 20px;
-            padding: 10px 20px;
-            background: #7f8c8d;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background 0.3s ease;
+        
+        .subscription-info {
+            font-size: 0.75rem;
+            color: var(--gray-600);
+            margin-top: 0.25rem;
         }
-
-        .back-btn:hover {
-            background: #636e72;
+        
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 200px;
+            }
+            
+            .main-content {
+                margin-left: 200px;
+            }
         }
-
-        .password-cell {
-            font-family: monospace;
-            background: #f8f9fa;
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 0.9rem;
+        
+        @media (max-width: 768px) {
+            .admin-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                padding: 1rem;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .search-bar {
+                flex-direction: column;
+            }
+            
+            .search-input {
+                width: 100%;
+            }
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray-600);
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--gray-200);
         }
     </style>
 </head>
 <body>
     <div class="admin-container">
-        <div class="admin-header">
-            <h1><i class="fas fa-users-cog"></i> Gestion des Utilisateurs</h1>
-            <p>Administration complète des comptes utilisateurs</p>
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1>
+                    <i class="fas fa-graduation-cap"></i>
+                    Zone<span>Bourse</span>
+                </h1>
+                <p style="font-size: 0.875rem; color: var(--gray-600); margin-top: 0.5rem;">
+                    Panneau d'administration
+                </p>
+            </div>
+            
+            <nav class="nav-links">
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-item">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+                <a href="{{ url_for('admin_opportunities') }}" class="nav-item">
+                    <i class="fas fa-briefcase"></i>
+                    Opportunités
+                </a>
+                <a href="{{ url_for('admin_users') }}" class="nav-item active">
+                    <i class="fas fa-users"></i>
+                    Utilisateurs
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="nav-item">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour au site
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Déconnexion
+                </a>
+            </nav>
         </div>
-
-        <a href="/admin" class="back-btn">
-            <i class="fas fa-arrow-left"></i> Retour au Dashboard
-        </a>
-
-        <div class="stats-grid" id="statsContainer">
-            <!-- Les statistiques seront chargées dynamiquement -->
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1>
+                    <i class="fas fa-users-cog"></i>
+                    Gestion des utilisateurs
+                </h1>
+                <a href="{{ url_for('admin_passwords') }}" class="btn btn-primary">
+                    <i class="fas fa-key"></i> Voir les mots de passe
+                </a>
+            </div>
+            
+            <!-- Messages flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash {{ category }}">
+                                <i class="fas fa-{{ 'check' if category == 'success' else 'exclamation' }}-circle"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Stats -->
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-icon total">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>{{ users|length }}</h3>
+                        <p>Utilisateurs totaux</p>
+                    </div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-icon active">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>{{ users|selectattr('is_active', 'equalto', true)|list|length }}</h3>
+                        <p>Utilisateurs actifs</p>
+                    </div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-icon admin">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>{{ users|selectattr('is_admin', 'equalto', true)|list|length }}</h3>
+                        <p>Administrateurs</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recherche et filtres -->
+            <div class="search-container">
+                <div class="search-bar">
+                    <input type="text" class="search-input" id="searchInput" 
+                           placeholder="Rechercher par nom, prénom, email ou numéro...">
+                    <button class="btn btn-primary" onclick="performSearch()">
+                        <i class="fas fa-search"></i> Rechercher
+                    </button>
+                </div>
+                
+                <div class="filters">
+                    <span class="filter-tag active" data-filter="all" onclick="filterUsers('all')">
+                        Tous les utilisateurs
+                    </span>
+                    <span class="filter-tag" data-filter="active" onclick="filterUsers('active')">
+                        Actifs seulement
+                    </span>
+                    <span class="filter-tag" data-filter="inactive" onclick="filterUsers('inactive')">
+                        Inactifs seulement
+                    </span>
+                    <span class="filter-tag" data-filter="admin" onclick="filterUsers('admin')">
+                        Administrateurs
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Table -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nom & Prénom</th>
+                            <th>Email</th>
+                            <th>Numéro</th>
+                            <th>Rôle</th>
+                            <th>Statut</th>
+                            <th>Date inscription</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTable">
+                        {% for user in users %}
+                        <tr data-id="{{ user.id }}" 
+                            data-active="{{ user.is_active }}" 
+                            data-admin="{{ user.is_admin }}"
+                            data-name="{{ user.nom }} {{ user.prenom }}"
+                            data-email="{{ user.email }}"
+                            data-number="{{ user.numero }}"
+                            data-subscription-days="{{ user.subscription_days if user.subscription_days else 0 }}"
+                            data-is-blocked="{{ user.is_blocked if user.is_blocked else false }}">
+                            <td>{{ user.id }}</td>
+                            <td>
+                                <strong>{{ user.nom }} {{ user.prenom }}</strong>
+                                {% if user.is_blocked %}
+                                <div style="font-size: 0.75rem; color: var(--danger); margin-top: 0.25rem;">
+                                    <i class="fas fa-ban"></i> Bloqué
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.numero }}</td>
+                            <td>
+                                {% if user.is_admin %}
+                                <span class="badge admin">Administrateur</span>
+                                {% else %}
+                                <span class="badge user">Utilisateur</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="status-badge {{ 'active' if user.is_active else 'inactive' }}"
+                                      onclick="toggleUserStatus({{ user.id }}, this)">
+                                    {{ 'Actif' if user.is_active else 'Inactif' }}
+                                </span>
+                                <div class="subscription-info">
+                                    {% if user.subscription_days and user.subscription_days > 0 %}
+                                    Abonnement: {{ user.subscription_days }} jours
+                                    {% else %}
+                                    Pas d'abonnement
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {{ user.created_at.strftime('%d/%m/%Y') }}
+                                <div class="subscription-info">
+                                    Inscrit il y a {{ ((now - user.created_at).days if now else 0) }} jours
+                                </div>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <!-- Bouton Valider (ajouter 1 mois) -->
+                                    <button class="btn btn-success btn-sm" 
+                                            onclick="addSubscriptionMonth({{ user.id }})">
+                                        <i class="fas fa-calendar-plus"></i> Valider (+1 mois)
+                                    </button>
+                                    
+                                    <!-- Bouton Annuler (enlever 1 mois) -->
+                                    <button class="btn btn-warning btn-sm" 
+                                            onclick="removeSubscriptionMonth({{ user.id }})">
+                                        <i class="fas fa-calendar-minus"></i> Annuler (-1 mois)
+                                    </button>
+                                    
+                                    <!-- Bouton Activer/Désactiver -->
+                                    {% if user.is_active %}
+                                    <button class="btn btn-danger btn-sm" 
+                                            onclick="deactivateUser({{ user.id }})">
+                                        <i class="fas fa-user-slash"></i> Désactiver
+                                    </button>
+                                    {% else %}
+                                    <button class="btn btn-success btn-sm" 
+                                            onclick="activateUser({{ user.id }})">
+                                        <i class="fas fa-user-check"></i> Activer
+                                    </button>
+                                    {% endif %}
+                                    
+                                    <!-- Bouton Bloquer/Débloquer -->
+                                    {% if user.is_blocked %}
+                                    <button class="btn btn-info btn-sm" 
+                                            onclick="unblockUser({{ user.id }})">
+                                        <i class="fas fa-unlock"></i> Débloquer
+                                    </button>
+                                    {% else %}
+                                    <button class="btn btn-danger btn-sm" 
+                                            onclick="blockUser({{ user.id }})">
+                                        <i class="fas fa-ban"></i> Bloquer
+                                    </button>
+                                    {% endif %}
+                                    
+                                    <!-- Bouton Rendre Admin -->
+                                    {% if not user.is_admin %}
+                                    <button class="btn btn-primary btn-sm" 
+                                            onclick="makeAdmin({{ user.id }})">
+                                        <i class="fas fa-user-shield"></i> Rendre admin
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 3rem; color: var(--gray-600);">
+                                <i class="fas fa-user-slash" style="font-size: 3rem; margin-bottom: 1rem; color: var(--gray-400);"></i>
+                                <h3>Aucun utilisateur</h3>
+                                <p>Les utilisateurs apparaîtront ici après inscription</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Export Options -->
+            <div style="background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--gray-200);">
+                <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--gray-700); display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-download"></i> Exporter la liste des utilisateurs
+                </h3>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-secondary" onclick="exportData('csv')">
+                        <i class="fas fa-file-csv"></i> CSV
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportData('excel')">
+                        <i class="fas fa-file-excel"></i> Excel
+                    </button>
+                    <button class="btn btn-secondary" onclick="printUsers()">
+                        <i class="fas fa-print"></i> Imprimer
+                    </button>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <div class="search-box">
-            <input type="text" class="search-input" id="searchInput" placeholder="Rechercher un utilisateur par nom, prénom, email ou téléphone...">
-            <button class="search-btn" id="searchBtn">
-                <i class="fas fa-search"></i> Rechercher
-            </button>
-        </div>
-
-        <div class="users-table-container">
-            <table class="users-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nom</th>
-                        <th>Prénom</th>
-                        <th>Email</th>
-                        <th>Téléphone</th>
-                        <th>Mot de passe</th>
-                        <th>Date d'inscription</th>
-                        <th>Statut</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="usersTableBody">
-                    <!-- Les utilisateurs seront chargés dynamiquement -->
-                </tbody>
-            </table>
+    <!-- Modal pour les actions -->
+    <div id="actionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Confirmer l'action</h2>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalBody">
+                <p>Êtes-vous sûr de vouloir effectuer cette action ?</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+                <button class="btn btn-primary" id="modalConfirmBtn" onclick="confirmAction()">Confirmer</button>
+            </div>
         </div>
     </div>
 
     <script>
-        let allUsers = [];
-
-        // Charger les utilisateurs au démarrage
-        document.addEventListener('DOMContentLoaded', function() {
-            loadUsers();
-            setupSearch();
+        // Variables pour le modal
+        let currentUserId = null;
+        let currentAction = null;
+        let modal = document.getElementById('actionModal');
+        
+        // Ouvrir le modal
+        function openModal(userId, action, message) {
+            currentUserId = userId;
+            currentAction = action;
+            document.getElementById('modalBody').innerHTML = message;
+            document.getElementById('modalTitle').textContent = 'Confirmer l\'action';
+            modal.style.display = 'flex';
+        }
+        
+        // Fermer le modal
+        function closeModal() {
+            modal.style.display = 'none';
+            currentUserId = null;
+            currentAction = null;
+        }
+        
+        // Confirmer l'action
+        async function confirmAction() {
+            if (!currentUserId || !currentAction) return;
+            
+            let url = '';
+            let method = 'POST';
+            let body = {};
+            
+            switch(currentAction) {
+                case 'addMonth':
+                    url = `/admin/user/${currentUserId}/add-subscription-month`;
+                    break;
+                case 'removeMonth':
+                    url = `/admin/user/${currentUserId}/remove-subscription-month`;
+                    break;
+                case 'activate':
+                    url = `/admin/user/${currentUserId}/activate`;
+                    break;
+                case 'deactivate':
+                    url = `/admin/user/${currentUserId}/deactivate`;
+                    break;
+                case 'block':
+                    url = `/admin/user/${currentUserId}/block`;
+                    break;
+                case 'unblock':
+                    url = `/admin/user/${currentUserId}/unblock`;
+                    break;
+                case 'makeAdmin':
+                    url = `/admin/user/${currentUserId}/make-admin`;
+                    break;
+            }
+            
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: Object.keys(body).length ? JSON.stringify(body) : null
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message || 'Action effectuée avec succès!');
+                    location.reload(); // Recharger la page pour voir les changements
+                } else {
+                    alert('Erreur: ' + (result.error || 'Action échouée'));
+                }
+            } catch (error) {
+                alert('Erreur lors de l\'exécution de l\'action');
+                console.error('Error:', error);
+            } finally {
+                closeModal();
+            }
+        }
+        
+        // Ajouter un mois d'abonnement
+        function addSubscriptionMonth(userId) {
+            const userName = document.querySelector(`tr[data-id="${userId}"] [data-name]`)?.getAttribute('data-name') || 'cet utilisateur';
+            openModal(
+                userId, 
+                'addMonth',
+                `Êtes-vous sûr de vouloir ajouter 30 jours d'abonnement à <strong>${userName}</strong> ?`
+            );
+        }
+        
+        // Enlever un mois d'abonnement
+        function removeSubscriptionMonth(userId) {
+            const userName = document.querySelector(`tr[data-id="${userId}"] [data-name]`)?.getAttribute('data-name') || 'cet utilisateur';
+            openModal(
+                userId, 
+                'removeMonth',
+                `Êtes-vous sûr de vouloir retirer 30 jours d'abonnement à <strong>${userName}</strong> ?`
+            );
+        }
+        
+        // Activer un utilisateur
+        function activateUser(userId) {
+            const userName = document.querySelector(`tr[data-id="${userId}"] [data-name]`)?.getAttribute('data-name') || 'cet utilisateur';
+            openModal(
+                userId, 
+                'activate',
+                `Êtes-vous sûr de vouloir activer le compte de <strong>${userName}</strong> ?`
+            );
+        }
+        
+        // Désactiver un utilisateur
+        function deactivateUser(userId) {
+            const userName = document.querySelector(`tr[data-id="${userId}"] [data-name]`)?.getAttribute('data-name') || 'cet utilisateur';
+            openModal(
+                userId, 
+                'deactivate',
+                `Êtes-vous sûr de vouloir désactiver le compte de <strong>${userName}</strong> ?`
+            );
+        }
+        
+        // Bloquer un utilisateur
+        function blockUser(userId) {
+            const userName = document.querySelector(`tr[data-id="${userId}"] [data-name]`)?.getAttribute('data-name') || 'cet utilisateur';
+            openModal(
+                userId, 
+                'block',
+                `Êtes-vous sûr de vouloir bloquer l'accès au site pour <strong>${userName}</strong> ?`
+            );
+        }
+        
+        // Débloquer un utilisateur
+        function unblockUser(userId) {
+            const userName = document.querySelector(`tr[data-id="${userId}"] [data-name]`)?.getAttribute('data-name') || 'cet utilisateur';
+            openModal(
+                userId, 
+                'unblock',
+                `Êtes-vous sûr de vouloir débloquer l'accès au site pour <strong>${userName}</strong> ?`
+            );
+        }
+        
+        // Rendre admin
+        function makeAdmin(userId) {
+            const userName = document.querySelector(`tr[data-id="${userId}"] [data-name]`)?.getAttribute('data-name') || 'cet utilisateur';
+            openModal(
+                userId, 
+                'makeAdmin',
+                `Êtes-vous sûr de vouloir donner les droits d'administrateur à <strong>${userName}</strong> ?`
+            );
+        }
+        
+        // Recherche
+        function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#usersTable tr');
+            
+            rows.forEach(row => {
+                if (row.cells.length > 1) {
+                    const name = row.getAttribute('data-name').toLowerCase();
+                    const email = row.getAttribute('data-email').toLowerCase();
+                    const number = row.getAttribute('data-number').toLowerCase();
+                    
+                    if (name.includes(searchTerm) || email.includes(searchTerm) || number.includes(searchTerm)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+        }
+        
+        // Recherche en temps réel
+        document.getElementById('searchInput').addEventListener('input', performSearch);
+        
+        // Filtrage
+        function filterUsers(filter) {
+            const rows = document.querySelectorAll('#usersTable tr');
+            const filterTags = document.querySelectorAll('.filter-tag');
+            
+            // Mettre à jour les filtres actifs
+            filterTags.forEach(tag => {
+                tag.classList.remove('active');
+                if (tag.getAttribute('data-filter') === filter) {
+                    tag.classList.add('active');
+                }
+            });
+            
+            rows.forEach(row => {
+                if (row.cells.length > 1) {
+                    const isActive = row.getAttribute('data-active') === 'True';
+                    const isAdmin = row.getAttribute('data-admin') === 'True';
+                    const isBlocked = row.getAttribute('data-is-blocked') === 'true';
+                    
+                    let showRow = false;
+                    
+                    switch(filter) {
+                        case 'all':
+                            showRow = true;
+                            break;
+                        case 'active':
+                            showRow = isActive && !isBlocked;
+                            break;
+                        case 'inactive':
+                            showRow = !isActive || isBlocked;
+                            break;
+                        case 'admin':
+                            showRow = isAdmin;
+                            break;
+                    }
+                    
+                    row.style.display = showRow ? '' : 'none';
+                }
+            });
+        }
+        
+        // Activer/Désactiver un utilisateur (version simple)
+        async function toggleUserStatus(userId, element) {
+            try {
+                const response = await fetch(`/admin/toggle_user/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const isActive = result.is_active;
+                    
+                    // Mettre à jour l'élément visuel
+                    element.textContent = isActive ? 'Actif' : 'Inactif';
+                    element.className = `status-badge ${isActive ? 'active' : 'inactive'}`;
+                    
+                    // Mettre à jour l'attribut data
+                    const row = element.closest('tr');
+                    row.setAttribute('data-active', isActive);
+                    
+                    alert(`Utilisateur ${isActive ? 'activé' : 'désactivé'} avec succès!`);
+                } else {
+                    alert('Erreur: ' + result.error);
+                }
+            } catch (error) {
+                alert('Erreur lors de la modification du statut');
+            }
+        }
+        
+        // Exporter les données
+        function exportData(format) {
+            alert(`Export ${format.toUpperCase()} - À implémenter avec une bibliothèque d'exportation`);
+        }
+        
+        // Imprimer
+        function printUsers() {
+            window.print();
+        }
+        
+        // Fermer les messages flash après 5 secondes
+        setTimeout(function() {
+            const flashes = document.querySelectorAll('.flash');
+            flashes.forEach(flash => {
+                flash.style.opacity = '0';
+                setTimeout(() => flash.remove(), 300);
+            });
+        }, 5000);
+        
+        // Entrée pour la recherche
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
         });
-
-        // Charger tous les utilisateurs
-        async function loadUsers() {
-            try {
-                const response = await fetch('/api/admin/users');
-                const result = await response.json();
-                
-                if (result.success) {
-                    allUsers = result.users;
-                    displayUsers(allUsers);
-                    updateStats(allUsers);
-                } else {
-                    showNotification('Erreur lors du chargement des utilisateurs', 'error');
-                }
-            } catch (error) {
-                console.error('Erreur:', error);
-                showNotification('Erreur de connexion', 'error');
+        
+        // Fermer le modal en cliquant à l'extérieur
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                closeModal();
             }
-        }
-
-        // Afficher les utilisateurs dans le tableau
-        function displayUsers(users) {
-            const tbody = document.getElementById('usersTableBody');
-            tbody.innerHTML = '';
-
-            users.forEach(user => {
-                const row = document.createElement('tr');
-                
-                // Formater la date
-                const signupDate = new Date(user.date_inscription);
-                const formattedDate = signupDate.toLocaleDateString('fr-FR', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-
-                row.innerHTML = `
-                    <td>${user.id}</td>
-                    <td>${user.nom}</td>
-                    <td>${user.prenom}</td>
-                    <td>${user.email || 'Non renseigné'}</td>
-                    <td>${user.numero_whatsapp}</td>
-                    <td class="password-cell">${user.password}</td>
-                    <td>${formattedDate}</td>
-                    <td>
-                        <span class="status-badge ${user.is_active ? 'status-active' : 'status-inactive'}">
-                            ${user.is_active ? 'Actif' : 'Inactif'}
-                        </span>
-                    </td>
-                    <td class="action-buttons">
-                        <button class="btn btn-success" onclick="validateUser(${user.id})" title="Valider - Ajouter 1 mois">
-                            <i class="fas fa-check"></i> Valider
-                        </button>
-                        <button class="btn btn-warning" onclick="toggleUserStatus(${user.id})" title="Activer/Désactiver">
-                            <i class="fas fa-power-off"></i> ${user.is_active ? 'Désactiver' : 'Activer'}
-                        </button>
-                        <button class="btn btn-danger" onclick="deleteUser(${user.id})" title="Supprimer définitivement">
-                            <i class="fas fa-trash"></i> Supprimer
-                        </button>
-                    </td>
-                `;
-                
-                tbody.appendChild(row);
-            });
-        }
-
-        // Mettre à jour les statistiques
-        function updateStats(users) {
-            const totalUsers = users.length;
-            const activeUsers = users.filter(u => u.is_active).length;
-            const inactiveUsers = totalUsers - activeUsers;
-            const today = new Date();
-            const newToday = users.filter(u => {
-                const userDate = new Date(u.date_inscription);
-                return userDate.toDateString() === today.toDateString();
-            }).length;
-
-            document.getElementById('statsContainer').innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-number">${totalUsers}</div>
-                    <div class="stat-label">Utilisateurs Total</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" style="color: #27ae60;">${activeUsers}</div>
-                    <div class="stat-label">Utilisateurs Actifs</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" style="color: #e74c3c;">${inactiveUsers}</div>
-                    <div class="stat-label">Utilisateurs Inactifs</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" style="color: #3498db;">${newToday}</div>
-                    <div class="stat-label">Nouveaux Aujourd'hui</div>
-                </div>
-            `;
-        }
-
-        // Valider un utilisateur (ajouter 1 mois)
-        async function validateUser(userId) {
-            if (!confirm('Êtes-vous sûr de vouloir valider cet utilisateur ? Cela ajoutera 1 mois à sa souscription.')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/admin/users/${userId}/validate`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showNotification('Utilisateur validé avec succès ! 1 mois ajouté.');
-                    loadUsers(); // Recharger la liste
-                } else {
-                    showNotification('Erreur lors de la validation', 'error');
-                }
-            } catch (error) {
-                console.error('Erreur:', error);
-                showNotification('Erreur de connexion', 'error');
-            }
-        }
-
-        // Activer/Désactiver un utilisateur
-        async function toggleUserStatus(userId) {
-            try {
-                const response = await fetch(`/api/admin/users/${userId}/toggle-status`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showNotification('Statut utilisateur modifié avec succès !');
-                    loadUsers(); // Recharger la liste
-                } else {
-                    showNotification('Erreur lors de la modification du statut', 'error');
-                }
-            } catch (error) {
-                console.error('Erreur:', error);
-                showNotification('Erreur de connexion', 'error');
-            }
-        }
-
-        // Supprimer un utilisateur
-        async function deleteUser(userId) {
-            if (!confirm('Êtes-vous sûr de vouloir supprimer définitivement cet utilisateur ? Cette action est irréversible.')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/admin/users/${userId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showNotification('Utilisateur supprimé avec succès !');
-                    loadUsers(); // Recharger la liste
-                } else {
-                    showNotification('Erreur lors de la suppression', 'error');
-                }
-            } catch (error) {
-                console.error('Erreur:', error);
-                showNotification('Erreur de connexion', 'error');
-            }
-        }
-
-        // Configuration de la recherche
-        function setupSearch() {
-            const searchInput = document.getElementById('searchInput');
-            const searchBtn = document.getElementById('searchBtn');
-
-            function performSearch() {
-                const searchTerm = searchInput.value.toLowerCase().trim();
-                
-                if (searchTerm === '') {
-                    displayUsers(allUsers);
-                    return;
-                }
-
-                const filteredUsers = allUsers.filter(user => 
-                    user.nom.toLowerCase().includes(searchTerm) ||
-                    user.prenom.toLowerCase().includes(searchTerm) ||
-                    user.email?.toLowerCase().includes(searchTerm) ||
-                    user.numero_whatsapp.includes(searchTerm)
-                );
-
-                displayUsers(filteredUsers);
-            }
-
-            searchInput.addEventListener('input', performSearch);
-            searchBtn.addEventListener('click', performSearch);
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') performSearch();
-            });
-        }
-
-        // Afficher les notifications
-        function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.style.background = type === 'error' ? '#e74c3c' : '#27ae60';
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => document.body.removeChild(notification), 300);
-            }, 3000);
         }
     </script>
 </body>

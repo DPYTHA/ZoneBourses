@@ -1,190 +1,142 @@
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime, timedelta, timezone
+from config import Config
 import os
-import json
-from flask import Flask, request, redirect, url_for, session, jsonify, render_template
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-import psycopg2
-from datetime import datetime, timedelta
-import uuid
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
-# Import depuis models.py corrigé
-from models import (
-    User, 
-    save_uploaded_file, 
-    allowed_file,
-    save_multiple_files,
-    parse_procedure_medias,
-    create_debug_route
+# Configuration Cloudinary
+cloudinary.config(
+    cloud_name = Config.CLOUDINARY_CLOUD_NAME,
+    api_key = Config.CLOUDINARY_API_KEY,
+    api_secret = Config.CLOUDINARY_API_SECRET,
+    secure = True
 )
-
 app = Flask(__name__)
+app.config.from_object(Config)
+app.secret_key = app.config['SECRET_KEY']  # Important pour les sessions
+db = SQLAlchemy(app)
 
-# Configuration pour Railway
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'votre_cle_secrete_tres_securisee_zonebourse')
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
+# Modèle utilisateur
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(100), nullable=False)
+    prenom = db.Column(db.String(100), nullable=False)
+    numero = db.Column(db.String(20), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)  # Stocké en clair comme demandé
+    is_admin = db.Column(db.Boolean, default=False)
+    is_active = db.Column(db.Boolean, default=True)
+    subscription_days = db.Column(db.Integer, default=0)  # Nouveau champ
+    subscription_expiry = db.Column(db.DateTime)  # Nouveau champ
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'mkv', 'pdf', 'doc', 'docx'}
+# Modèle pour les opportunités
+class Opportunity(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    type = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    pays = db.Column(db.String(100))
+    montant = db.Column(db.String(100))
+    deadline = db.Column(db.Date)
+    is_featured = db.Column(db.Boolean, default=False)
+    
+    # Champs de postulation
+    postulation_steps = db.Column(db.Text)  # Étapes séparées par |||
+    documents_required = db.Column(db.Text)  # Documents séparés par |||
+    postulation_link = db.Column(db.String(500))
+    contact_email = db.Column(db.String(120))
+    contact_phone = db.Column(db.String(50))
+    
+    # Images - stocker les URLs Cloudinary
+    image_urls = db.Column(db.Text)  # URLs séparées par |||
+    image_public_ids = db.Column(db.Text)  # IDs publics Cloudinary séparés par |||
+    
+    # Vidéo
+    video_url = db.Column(db.String(500))
+    
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
 
-# Configuration de Flask-Login
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login_page'
-
-class FlaskUser(UserMixin):
-    """Classe User pour Flask-Login (version simplifiée)"""
-    def __init__(self, id, nom, prenom, numero_whatsapp, password, email, is_active, is_admin, date_inscription):
-        self.id = id
-        self.nom = nom
-        self.prenom = prenom
-        self.numero_whatsapp = numero_whatsapp
-        self.password = password
-        self.email = email
-        self._is_active = is_active
-        self.is_admin = is_admin
-        self.date_inscription = date_inscription
-
-    @property
-    def is_active(self):
-        return self._is_active
-
-@login_manager.user_loader
-def load_user(user_id):
-    """Charge un utilisateur pour Flask-Login"""
-    try:
-        user = User.get_by_id(user_id)
-        if user:
-            # Convertir le User du models.py en FlaskUser pour Flask-Login
-            return FlaskUser(
-                user.id, user.nom, user.prenom, user.numero_whatsapp, 
-                user.password, user.email, user.is_active, 
-                user.is_admin, user.date_inscription
+# Initialisation de la base
+def init_db():
+    with app.app_context():
+        db.create_all()
+        
+        # Créer admin
+        admin = User.query.filter_by(email=app.config['ADMIN_EMAIL']).first()
+        if not admin:
+            admin = User(
+                nom='Admin',
+                prenom='System',
+                numero='+7 9879040719',
+                email=app.config['ADMIN_EMAIL'],
+                password=app.config['ADMIN_PASSWORD'],  # En clair
+                is_admin=True,
+                is_active=True
             )
-        return None
-    except Exception as e:
-        print(f"Erreur dans load_user: {e}")
-        return None
-
-def get_db_connection():
-    """Établit une connexion à la base de données"""
-    try:
-        DATABASE_URL = os.environ.get('DATABASE_URL')
-        if DATABASE_URL:
-            # Pour Railway avec SSL
-            conn = psycopg2.connect(DATABASE_URL, sslmode='require')
-            print("✅ Connexion à la DB Railway établie")
-        else:
-            # Pour le développement local
-            conn = psycopg2.connect(
-                dbname='Minizone_db',
-                user='Zone_user',
-                password='Pytha1991',
-                host='localhost',
-                port='5432'
-            )
-            print("✅ Connexion à la DB locale établie")
-        return conn
-    except Exception as e:
-        print(f"❌ Erreur de connexion à la base de données: {e}")
-        return None
-
-@app.route('/init-db-manual')
-def init_db_manual():
-    """Initialisation manuelle de la base de données - À APPELER UNE FOIS SUR RAILWAY"""
-    try:
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({'success': False, 'message': '❌ Impossible de se connecter à la DB'}), 500
+            db.session.add(admin)
+            db.session.commit()
+            print("✅ Admin créé")
         
-        cur = conn.cursor()
-        
-        # Création de la table utilisateurs
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                nom VARCHAR(100) NOT NULL,
-                prenom VARCHAR(100) NOT NULL,
-                numero_whatsapp VARCHAR(20) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                email VARCHAR(255),
-                is_active BOOLEAN DEFAULT TRUE,
-                is_admin BOOLEAN DEFAULT FALSE,
-                date_inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        
-        # Création de la table des bourses
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS bourses (
-                id SERIAL PRIMARY KEY,
-                titre VARCHAR(255) NOT NULL,
-                description TEXT,
-                pays VARCHAR(100),
-                universite VARCHAR(255),
-                niveau_etude VARCHAR(100),
-                domaine_etude VARCHAR(255),
-                montant_bourse VARCHAR(100),
-                date_limite DATE,
-                conditions TEXT,
-                procedure_postulation TEXT,
-                image_url VARCHAR(500),
-                video_url VARCHAR(500),
-                procedure_medias TEXT,
-                date_publication TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_active BOOLEAN DEFAULT TRUE
-            )
-        ''')
-        
-        # Ajouter les colonnes manquantes si nécessaire
-        try:
-            cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='bourses' AND column_name='procedure_medias'")
-            if not cur.fetchone():
-                cur.execute('ALTER TABLE bourses ADD COLUMN procedure_medias TEXT')
-                print("✅ Colonne procedure_medias ajoutée")
-        except Exception as e:
-            print(f"Note colonne procedure_medias: {e}")
-        
-        try:
-            cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='bourses' AND column_name='is_active'")
-            if not cur.fetchone():
-                cur.execute('ALTER TABLE bourses ADD COLUMN is_active BOOLEAN DEFAULT TRUE')
-                print("✅ Colonne is_active ajoutée")
-        except Exception as e:
-            print(f"Note colonne is_active: {e}")
-        
-        # Créer l'admin par défaut
-        cur.execute('''
-            INSERT INTO users (nom, prenom, numero_whatsapp, email, password, is_admin, is_active)
-            VALUES ('Admin', 'System', '+2250710069791', 'moua18978@gmail.com', 'admin123', TRUE, TRUE)
-            ON CONFLICT (numero_whatsapp) DO NOTHING
-        ''')
-        
-        # Vérifier si des bourses existent déjà
-        cur.execute('SELECT COUNT(*) FROM bourses')
-        count = cur.fetchone()[0]
-        
-        if count == 0:
-            # Insérer des bourses d'exemple avec des dates futures
-            cur.execute('''
-                INSERT INTO bourses (titre, description, pays, universite, niveau_etude, domaine_etude, montant_bourse, date_limite, conditions, procedure_postulation, is_active)
-                VALUES 
-                ('Bourse d''excellence en Informatique', 'Bourse complète pour étudier l''informatique en France avec tous les frais couverts.', 'France', 'Université Paris-Saclay', 'Master', 'Informatique', '15 000€ par an', '2025-06-30', 'Diplôme de licence en informatique, moyenne minimale de 14/20', '1. Remplir le formulaire en ligne\n2. Envoyer les documents requis\n3. Passer un entretien', TRUE),
-                ('Bourse pour études en Génie Civil', 'Bourse partielle pour études de génie civil au Canada avec possibilité de stage.', 'Canada', 'Université de Montréal', 'Licence', 'Génie Civil', '10 000 CAD par an', '2025-07-15', 'Baccalauréat scientifique, bon niveau en mathématiques', '1. Créer un compte sur le portail de l''université\n2. Soumettre le dossier de candidature\n3. Attendre la réponse', TRUE),
-                ('Bourse de Médecine aux USA', 'Bourse complète pour étudier la médecine aux États-Unis incluant les frais de scolarité et logement.', 'États-Unis', 'Harvard University', 'Doctorat', 'Médecine', '50 000$ par an', '2025-05-31', 'Diplôme de pré-médecine, excellents résultats académiques, TOEFL 100+', '1. Soumettre le dossier complet\n2. Passer un examen d''entrée\n3. Entretien avec le comité', TRUE)
-            ''')
-            print(f"✅ {cur.rowcount} bourses d'exemple insérées")
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        return jsonify({
-            'success': True, 
-            'message': '✅ Base de données initialisée avec succès!',
-            'admin_account': 'Numéro: +2250710069791 | Mot de passe: admin123'
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': f'❌ Erreur: {str(e)}'}), 500
+        # Créer opportunités d'exemple si vide
+        if Opportunity.query.count() == 0:
+            opportunities = [
+                Opportunity(
+                    title='Bourse Complète',
+                    type='bourse',
+                    description='Bourse d\'études complète pour programmes universitaires',
+                    pays='France, Allemagne, Canada',
+                    montant='1,18€ / mois',
+                    is_featured=False
+                ),
+                Opportunity(
+                    title='Bourse d\'Excellence Eiffel',
+                    type='excellence',
+                    description='Frais complets + Allocation de vie mensuelle',
+                    pays='France',
+                    montant='Complet',
+                    is_featured=True  # Carte spéciale
+                ),
+                Opportunity(
+                    title='Bourse Complète',
+                    type='bourse',
+                    description='Disponible dans 45 pays à travers le monde',
+                    pays='International',
+                    montant='45 PAYS',
+                    is_featured=False
+                ),
+                Opportunity(
+                    title='Bourses Admissions',
+                    type='admission',
+                    description='Admissions avec bourses d\'études intégrées',
+                    pays='Monde',
+                    montant='Variable',
+                    is_featured=False
+                ),
+                Opportunity(
+                    title='Fulbright Foreign Student',
+                    type='bourse',
+                    description='Programme d\'échange culturel et académique',
+                    pays='États-Unis',
+                    montant='Variable',
+                    is_featured=False
+                ),
+                Opportunity(
+                    title='Bourse d\'Excellence',
+                    type='excellence',
+                    description='Pour étudiants avec parcours académique exceptionnel',
+                    pays='Europe, Amérique du Nord',
+                    montant='2,500€ / mois',
+                    is_featured=False
+                )
+            ]
+            for opp in opportunities:
+                db.session.add(opp)
+            db.session.commit()
+            print(f"✅ {len(opportunities)} opportunités créées")
 
 # Routes principales
 @app.route('/')
@@ -193,589 +145,573 @@ def splash():
 
 @app.route('/home')
 def home():
-    return render_template('index.html')
+    return render_template('home.html')
 
-@app.route('/login')
-def login_page():
-    return render_template('login.html')
+@app.route('/admin/passwords')
+def admin_passwords():
+    if 'user_id' not in session or not session.get('is_admin'):
+        flash('Accès réservé aux administrateurs.', 'error')
+        return redirect(url_for('login'))
+    
+    users = User.query.all()
+    return render_template('admin_passwords.html',
+                         user={'nom': session['user_nom'], 'prenom': session['user_prenom']},
+                         users=users)
 
-@app.route('/register')
-def register_page():
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        try:
+            nom = request.form['nom']
+            prenom = request.form['prenom']
+            numero = request.form['numero']
+            email = request.form['email']
+            password = request.form['password']
+            
+            # Validation simple
+            if not all([nom, prenom, numero, email, password]):
+                flash('Tous les champs sont obligatoires', 'error')
+                return redirect(url_for('register'))
+            
+            # Vérifier si l'utilisateur existe déjà
+            if User.query.filter_by(numero=numero).first():
+                flash('Ce numéro est déjà enregistré.', 'error')
+                return redirect(url_for('register'))
+            
+            if User.query.filter_by(email=email).first():
+                flash('Cet email est déjà enregistré.', 'error')
+                return redirect(url_for('register'))
+            
+            # Créer nouvel utilisateur
+            new_user = User(
+                nom=nom,
+                prenom=prenom,
+                numero=numero,
+                email=email,
+                password=password,
+                is_admin=False,
+                is_active=True
+            )
+            
+            db.session.add(new_user)
+            db.session.commit()
+            
+            flash('Inscription réussie! Vous pouvez maintenant vous connecter.', 'success')
+            return redirect(url_for('login'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erreur lors de l\'inscription: {str(e)}', 'error')
+            return redirect(url_for('register'))
+    
     return render_template('register.html')
 
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    """Tableau de bord utilisateur avec toutes les bourses"""
-    try:
-        conn = get_db_connection()
-        if conn is None:
-            return "Erreur de connexion à la base de données", 500
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        numero = request.form['numero']
+        password = request.form['password']
         
-        cur = conn.cursor()
+        user = User.query.filter_by(numero=numero).first()
         
-        # Récupérer toutes les bourses actives
-        cur.execute('SELECT * FROM bourses WHERE is_active = TRUE ORDER BY date_limite ASC')
-        bourses_data = cur.fetchall()
-        
-        # Récupérer les colonnes pour debug
-        cur.execute("""
-            SELECT column_name FROM information_schema.columns 
-            WHERE table_name='bourses' ORDER BY ordinal_position
-        """)
-        columns = [col[0] for col in cur.fetchall()]
-        
-        cur.close()
-        conn.close()
-        
-        print(f"📊 {len(bourses_data)} bourses trouvées")
-        print(f"📋 Colonnes bourses: {columns}")
-        
-        bourses = []
-        for bourse in bourses_data:
-            # Parser les médias de procédure
-            procedure_medias = []
-            if len(bourse) > 13 and bourse[13]:  # procedure_medias à l'index 13
-                procedure_medias = parse_procedure_medias(bourse[13])
-            
-            # Créer l'objet bourse
-            bourse_obj = {
-                'id': bourse[0],
-                'titre': bourse[1] if len(bourse) > 1 else 'Sans titre',
-                'description': bourse[2] if len(bourse) > 2 else '',
-                'pays': bourse[3] if len(bourse) > 3 else '',
-                'universite': bourse[4] if len(bourse) > 4 else '',
-                'niveau_etude': bourse[5] if len(bourse) > 5 else '',
-                'domaine_etude': bourse[6] if len(bourse) > 6 else '',
-                'montant_bourse': bourse[7] if len(bourse) > 7 else '',
-                'date_limite': bourse[8].strftime('%d %B %Y') if len(bourse) > 8 and bourse[8] else '',
-                'conditions': bourse[9] if len(bourse) > 9 else '',
-                'procedure_postulation': bourse[10] if len(bourse) > 10 else '',
-                'image_url': bourse[11] if len(bourse) > 11 else '',
-                'video_url': bourse[12] if len(bourse) > 12 else '',
-                'procedure_medias': procedure_medias,
-                'has_media': bool(bourse[11] if len(bourse) > 11 else '' or bourse[12] if len(bourse) > 12 else ''),
-                'has_procedure_medias': len(procedure_medias) > 0
-            }
-            bourses.append(bourse_obj)
-        
-        # Informations utilisateur
-        user_info = {
-            'id': current_user.id,
-            'nom': current_user.nom,
-            'prenom': current_user.prenom,
-            'email': current_user.email,
-            'numero_whatsapp': current_user.numero_whatsapp,
-            'is_admin': current_user.is_admin,
-            'date_inscription': current_user.date_inscription.strftime('%d/%m/%Y') if current_user.date_inscription else ''
-        }
-        
-        return render_template('dashboard.html', user=current_user, bourses=bourses, user_info=user_info)
-        
-    except Exception as e:
-        print(f"❌ Erreur dans dashboard: {e}")
-        return f"Erreur: {str(e)}", 500
-
-@app.route('/bourse/<int:bourse_id>')
-@login_required
-def bourse_detail_page(bourse_id):
-    return render_template('bourse_detail.html', bourse_id=bourse_id)
-
-@app.route('/admin')
-@login_required
-def admin_page():
-    if not current_user.is_admin:
-        return redirect(url_for('dashboard'))
-    return render_template('admin.html')
-
-@app.route('/renseignement')
-def renseignement_page():
-    return render_template('renseignement.html')
-
-@app.route('/admin/users')
-@login_required
-def admin_users_page():
-    """Page de gestion des utilisateurs"""
-    if not current_user.is_admin:
-        return redirect(url_for('dashboard'))
-    return render_template('admin_users.html')
-
-# Routes API
-@app.route('/api/login', methods=['POST'])
-def api_login():
-    data = request.get_json()
-    if not data:
-        return jsonify({'success': False, 'message': 'Données manquantes'}), 400
-    
-    numero_whatsapp = data.get('numero_whatsapp', '').strip()
-    password = data.get('password', '').strip()
-    
-    if not numero_whatsapp or not password:
-        return jsonify({'success': False, 'message': 'Numéro WhatsApp et mot de passe requis'}), 400
-    
-    conn = get_db_connection()
-    if conn is None:
-        return jsonify({'success': False, 'message': 'Erreur de connexion à la base de données'}), 500
-    
-    try:
-        cur = conn.cursor()
-        cur.execute(
-            'SELECT id, nom, prenom, numero_whatsapp, password, email, is_active, is_admin, date_inscription FROM users WHERE numero_whatsapp = %s', 
-            (numero_whatsapp,)
-        )
-        user_data = cur.fetchone()
-        cur.close()
-        conn.close()
-        
-        if user_data and user_data[5] == password:  # Index 5 pour password
-            user_obj = FlaskUser(*user_data)
-            if user_obj.is_active:
-                login_user(user_obj, remember=True)
-                return jsonify({
-                    'success': True,
-                    'message': f'Bienvenue {user_obj.prenom} {user_obj.nom}!',
-                    'user': {
-                        'id': user_obj.id,
-                        'nom': user_obj.nom,
-                        'prenom': user_obj.prenom,
-                        'is_admin': user_obj.is_admin
-                    }
-                })
+        if user:
+            # Comparaison en clair comme demandé
+            if user.password == password:
+                if user.is_active:
+                    session['user_id'] = user.id
+                    session['user_nom'] = user.nom
+                    session['user_prenom'] = user.prenom
+                    session['is_admin'] = user.is_admin
+                    
+                    flash('Connexion réussie!', 'success')
+                    
+                    # Redirection différente pour admin vs utilisateur normal
+                    if user.is_admin:
+                        return redirect(url_for('admin_dashboard'))
+                    else:
+                        return redirect(url_for('dashboard'))
+                        
+                else:
+                    flash('Votre compte est désactivé.', 'error')
             else:
-                return jsonify({'success': False, 'message': 'Votre compte a été désactivé'}), 403
+                flash('Mot de passe incorrect.', 'error')
         else:
-            return jsonify({'success': False, 'message': 'Numéro WhatsApp ou mot de passe incorrect'}), 401
-    except Exception as e:
-        print(f"Erreur login: {e}")
-        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+            flash('Numéro de téléphone non reconnu.', 'error')
+    
+    return render_template('login.html')
 
-@app.route('/api/register', methods=['POST'])
-def api_register():
-    data = request.get_json()
-    if not data:
-        return jsonify({'success': False, 'message': 'Données manquantes'}), 400
+@app.route('/admin/upload-image', methods=['POST'])
+def upload_image():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'error': 'Non autorisé'}), 403
     
-    nom = data.get('nom', '').strip()
-    prenom = data.get('prenom', '').strip()
-    numero_whatsapp = data.get('numero_whatsapp', '').strip()
-    email = data.get('email', '').strip()
-    password = data.get('password', '').strip()
-    confirm_password = data.get('confirm_password', '').strip()
+    if 'image' not in request.files:
+        return jsonify({'success': False, 'error': 'Aucune image fournie'}), 400
     
-    if not all([nom, prenom, numero_whatsapp, password, confirm_password]):
-        return jsonify({'success': False, 'message': 'Tous les champs obligatoires doivent être remplis'}), 400
+    image_file = request.files['image']
     
-    if password != confirm_password:
-        return jsonify({'success': False, 'message': 'Les mots de passe ne correspondent pas'}), 400
-    
-    # Vérifier si l'utilisateur existe déjà
-    conn = get_db_connection()
-    if conn is None:
-        return jsonify({'success': False, 'message': 'Erreur de connexion à la base de données'}), 500
+    if image_file.filename == '':
+        return jsonify({'success': False, 'error': 'Nom de fichier vide'}), 400
     
     try:
-        cur = conn.cursor()
-        cur.execute('SELECT id FROM users WHERE numero_whatsapp = %s', (numero_whatsapp,))
-        existing_user = cur.fetchone()
+        # Récupérer le timestamp depuis la requête
+        timestamp = request.form.get('timestamp')
         
-        if existing_user:
-            cur.close()
-            conn.close()
-            return jsonify({'success': False, 'message': 'Ce numéro WhatsApp est déjà utilisé'}), 409
-        
-        # Enregistrer l'utilisateur
-        cur.execute(
-            'INSERT INTO users (nom, prenom, numero_whatsapp, email, password, is_active) VALUES (%s, %s, %s, %s, %s, TRUE)',
-            (nom, prenom, numero_whatsapp, email, password)
+        # Upload vers Cloudinary avec timestamp
+        upload_result = cloudinary.uploader.upload(
+            image_file,
+            folder="zonebourse/opportunities",
+            timestamp=timestamp if timestamp else None,
+            transformation=[
+                {'width': 1200, 'height': 800, 'crop': 'limit'},
+                {'quality': 'auto:good'}
+            ]
         )
-        conn.commit()
-        cur.close()
-        conn.close()
         
         return jsonify({
             'success': True,
-            'message': 'Inscription réussie! Vous pouvez maintenant vous connecter.'
-        })
-    except Exception as e:
-        print(f"Erreur register: {e}")
-        if conn:
-            conn.rollback()
-            cur.close()
-            conn.close()
-        return jsonify({'success': False, 'message': f'Erreur lors de l\'inscription: {str(e)}'}), 500
-
-@app.route('/api/bourses')
-@login_required
-def api_bourses():
-    """API pour récupérer toutes les bourses"""
-    try:
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({'error': 'Database connection failed'}), 500
-        
-        cur = conn.cursor()
-        cur.execute('SELECT * FROM bourses WHERE is_active = TRUE ORDER BY date_limite ASC')
-        bourses_data = cur.fetchall()
-        cur.close()
-        conn.close()
-        
-        bourses = []
-        for bourse in bourses_data:
-            procedure_medias = []
-            if len(bourse) > 13 and bourse[13]:
-                procedure_medias = parse_procedure_medias(bourse[13])
-            
-            bourses.append({
-                'id': bourse[0],
-                'titre': bourse[1] if len(bourse) > 1 else '',
-                'description': bourse[2] if len(bourse) > 2 else '',
-                'pays': bourse[3] if len(bourse) > 3 else '',
-                'universite': bourse[4] if len(bourse) > 4 else '',
-                'niveau_etude': bourse[5] if len(bourse) > 5 else '',
-                'domaine_etude': bourse[6] if len(bourse) > 6 else '',
-                'montant_bourse': bourse[7] if len(bourse) > 7 else '',
-                'date_limite': bourse[8].strftime('%Y-%m-%d') if len(bourse) > 8 and bourse[8] else '',
-                'conditions': bourse[9] if len(bourse) > 9 else '',
-                'procedure_postulation': bourse[10] if len(bourse) > 10 else '',
-                'image_url': bourse[11] if len(bourse) > 11 else '',
-                'video_url': bourse[12] if len(bourse) > 12 else '',
-                'procedure_medias': procedure_medias,
-                'has_procedure_medias': len(procedure_medias) > 0
-            })
-        
-        return jsonify(bourses)
-    except Exception as e:
-        print(f"Erreur api_bourses: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/bourse/<int:bourse_id>')
-@login_required
-def api_bourse_detail(bourse_id):
-    """API pour récupérer les détails d'une bourse spécifique"""
-    try:
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({'error': 'Database connection failed'}), 500
-        
-        cur = conn.cursor()
-        cur.execute('SELECT * FROM bourses WHERE id = %s', (bourse_id,))
-        bourse_data = cur.fetchone()
-        cur.close()
-        conn.close()
-        
-        if not bourse_data:
-            return jsonify({'error': 'Bourse non trouvée'}), 404
-        
-        procedure_medias = []
-        if len(bourse_data) > 13 and bourse_data[13]:
-            procedure_medias = parse_procedure_medias(bourse_data[13])
-        
-        bourse = {
-            'id': bourse_data[0],
-            'titre': bourse_data[1] if len(bourse_data) > 1 else '',
-            'description': bourse_data[2] if len(bourse_data) > 2 else '',
-            'pays': bourse_data[3] if len(bourse_data) > 3 else '',
-            'universite': bourse_data[4] if len(bourse_data) > 4 else '',
-            'niveau_etude': bourse_data[5] if len(bourse_data) > 5 else '',
-            'domaine_etude': bourse_data[6] if len(bourse_data) > 6 else '',
-            'montant_bourse': bourse_data[7] if len(bourse_data) > 7 else '',
-            'date_limite': bourse_data[8].strftime('%d %B %Y') if len(bourse_data) > 8 and bourse_data[8] else '',
-            'conditions': bourse_data[9] if len(bourse_data) > 9 else '',
-            'procedure_postulation': bourse_data[10] if len(bourse_data) > 10 else '',
-            'image_url': bourse_data[11] if len(bourse_data) > 11 else '',
-            'video_url': bourse_data[12] if len(bourse_data) > 12 else '',
-            'procedure_medias': procedure_medias,
-            'has_procedure_medias': len(procedure_medias) > 0
-        }
-        
-        return jsonify(bourse)
-    except Exception as e:
-        print(f"Erreur api_bourse_detail: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/admin/users')
-@login_required
-def get_all_users():
-    """Récupérer tous les utilisateurs (admin seulement)"""
-    if not current_user.is_admin:
-        return jsonify({'success': False, 'error': 'Accès non autorisé'}), 403
-    
-    try:
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
-        
-        cur = conn.cursor()
-        cur.execute('''
-            SELECT id, nom, prenom, numero_whatsapp, password, email, 
-                   is_active, is_admin, date_inscription 
-            FROM users 
-            ORDER BY date_inscription DESC
-        ''')
-        users = cur.fetchall()
-        cur.close()
-        conn.close()
-        
-        users_list = []
-        for user in users:
-            users_list.append({
-                'id': user[0],
-                'nom': user[1],
-                'prenom': user[2],
-                'numero_whatsapp': user[3],
-                'password': user[4],
-                'email': user[5],
-                'is_active': user[6],
-                'is_admin': user[7],
-                'date_inscription': user[8].isoformat() if user[8] else None
-            })
-        
-        return jsonify({'success': True, 'users': users_list})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-@app.route('/api/admin/users/<int:user_id>/validate', methods=['POST'])
-@login_required
-def validate_user(user_id):
-    """Valider un utilisateur - Ajouter 1 mois à la souscription"""
-    if not current_user.is_admin:
-        return jsonify({'success': False, 'error': 'Accès non autorisé'}), 403
-    
-    try:
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
-        
-        cur = conn.cursor()
-        cur.execute('SELECT date_inscription FROM users WHERE id = %s', (user_id,))
-        result = cur.fetchone()
-        
-        if not result:
-            cur.close()
-            conn.close()
-            return jsonify({'success': False, 'error': 'Utilisateur non trouvé'})
-        
-        current_date = result[0] or datetime.now()
-        new_date = current_date + timedelta(days=30)
-        
-        cur.execute('UPDATE users SET date_inscription = %s WHERE id = %s', (new_date, user_id))
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        return jsonify({'success': True, 'message': 'Utilisateur validé - 1 mois ajouté'})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-@app.route('/api/admin/users/<int:user_id>/toggle-status', methods=['POST'])
-@login_required
-def toggle_user_status(user_id):
-    """Activer/Désactiver un utilisateur"""
-    if not current_user.is_admin:
-        return jsonify({'success': False, 'error': 'Accès non autorisé'}), 403
-    
-    try:
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
-        
-        cur = conn.cursor()
-        cur.execute('UPDATE users SET is_active = NOT is_active WHERE id = %s', (user_id,))
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        return jsonify({'success': True, 'message': 'Statut utilisateur modifié'})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-@app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
-@login_required
-def delete_user(user_id):
-    """Supprimer un utilisateur"""
-    if not current_user.is_admin:
-        return jsonify({'success': False, 'error': 'Accès non autorisé'}), 403
-    
-    try:
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
-        
-        cur = conn.cursor()
-        cur.execute('SELECT is_admin FROM users WHERE id = %s', (user_id,))
-        result = cur.fetchone()
-        
-        if result and result[0]:
-            cur.close()
-            conn.close()
-            return jsonify({'success': False, 'error': 'Impossible de supprimer un administrateur'})
-        
-        cur.execute('DELETE FROM users WHERE id = %s', (user_id,))
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        return jsonify({'success': True, 'message': 'Utilisateur supprimé'})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-@app.route('/api/admin/bourses', methods=['POST'])
-@login_required
-def add_bourse():
-    """Ajouter une nouvelle bourse (admin seulement)"""
-    if not current_user.is_admin:
-        return jsonify({'success': False, 'error': 'Accès non autorisé'}), 403
-    
-    try:
-        # Récupérer les données de base
-        titre = request.form.get('titre', '').strip()
-        description = request.form.get('description', '').strip()
-        pays = request.form.get('pays', '').strip()
-        universite = request.form.get('universite', '').strip()
-        niveau_etude = request.form.get('niveau_etude', '').strip()
-        domaine_etude = request.form.get('domaine_etude', '').strip()
-        montant_bourse = request.form.get('montant_bourse', '').strip()
-        date_limite = request.form.get('date_limite', '').strip()
-        conditions = request.form.get('conditions', '').strip()
-        procedure_postulation = request.form.get('procedure_postulation', '').strip()
-        
-        # Validation des champs obligatoires
-        if not all([titre, description, pays, universite, niveau_etude, domaine_etude, montant_bourse, date_limite]):
-            return jsonify({'success': False, 'error': 'Tous les champs obligatoires doivent être remplis'}), 400
-        
-        # Gérer l'image principale
-        image_url = None
-        if 'image' in request.files:
-            image_file = request.files['image']
-            if image_file and image_file.filename != '':
-                image_url = save_uploaded_file(image_file)
-        
-        # Gérer la vidéo principale
-        video_url = None
-        if 'video' in request.files:
-            video_file = request.files['video']
-            if video_file and video_file.filename != '':
-                video_url = save_uploaded_file(video_file)
-        
-        # Gérer les médias de procédure
-        procedure_medias = []
-        if 'procedure_medias' in request.files:
-            procedure_files = request.files.getlist('procedure_medias')
-            procedure_medias = save_multiple_files(procedure_files)
-        
-        # Connexion à la base de données
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({'success': False, 'error': 'Erreur de connexion à la base de données'}), 500
-        
-        cur = conn.cursor()
-        
-        # Préparer la valeur procedure_medias
-        procedure_medias_json = json.dumps(procedure_medias) if procedure_medias else None
-        
-        # Insérer la bourse
-        cur.execute('''
-            INSERT INTO bourses 
-            (titre, description, pays, universite, niveau_etude, domaine_etude, 
-             montant_bourse, date_limite, conditions, procedure_postulation, 
-             image_url, video_url, procedure_medias, is_active)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)
-            RETURNING id
-        ''', (
-            titre, description, pays, universite, niveau_etude, domaine_etude,
-            montant_bourse, date_limite, conditions, procedure_postulation,
-            image_url, video_url, procedure_medias_json
-        ))
-        
-        new_id = cur.fetchone()[0]
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        return jsonify({
-            'success': True, 
-            'message': 'Bourse ajoutée avec succès',
-            'bourse_id': new_id
+            'url': upload_result['secure_url'],
+            'public_id': upload_result['public_id']
         })
         
     except Exception as e:
-        print(f"Erreur lors de l'ajout de la bourse: {e}")
+        print(f"Erreur Cloudinary: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/logout')
-@login_required
-def api_logout():
-    """Déconnexion"""
-    logout_user()
-    return jsonify({'success': True, 'message': 'Déconnexion réussie'})
+@app.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        flash('Veuillez vous connecter pour accéder au tableau de bord.', 'error')
+        return redirect(url_for('login'))
+    
+    # Récupérer toutes les opportunités
+    opportunities = Opportunity.query.order_by(Opportunity.created_at.desc()).all()
+    
+    return render_template('dashboard.html', 
+                         user={'nom': session['user_nom'], 'prenom': session['user_prenom']},
+                         opportunities=opportunities)
 
-# Routes de debug
-@app.route('/debug/db-check')
-def debug_db_check():
-    """Vérifier l'état de la base de données"""
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('Vous avez été déconnecté.', 'info')
+    return redirect(url_for('home'))
+
+# Route pour vérifier la session (utile pour le splash screen)
+@app.route('/check-session')
+def check_session():
+    return jsonify({
+        'authenticated': 'user_id' in session,
+        'is_admin': session.get('is_admin', False)
+    })
+
+# ==================== ADMIN ROUTES ====================
+
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    if 'user_id' not in session or not session.get('is_admin'):
+        flash('Accès réservé aux administrateurs.', 'error')
+        return redirect(url_for('login'))
+    
+    # Statistiques
+    total_users = User.query.count()
+    total_opportunities = Opportunity.query.count()
+    active_users = User.query.filter_by(is_active=True).count()
+    
+    # Dernières opportunités
+    recent_opportunities = Opportunity.query.order_by(Opportunity.created_at.desc()).limit(5).all()
+    
+    return render_template('admin_dashboard.html',
+                         user={'nom': session['user_nom'], 'prenom': session['user_prenom']},
+                         stats={
+                             'total_users': total_users,
+                             'total_opportunities': total_opportunities,
+                             'active_users': active_users
+                         },
+                         recent_opportunities=recent_opportunities)
+
+@app.route('/admin/opportunities')
+def admin_opportunities():
+    if 'user_id' not in session or not session.get('is_admin'):
+        flash('Accès réservé aux administrateurs.', 'error')
+        return redirect(url_for('login'))
+    
+    opportunities = Opportunity.query.order_by(Opportunity.created_at.desc()).all()
+    return render_template('admin_opportunities.html', 
+                         user={'nom': session['user_nom'], 'prenom': session['user_prenom']},
+                         opportunities=opportunities)
+
+@app.route('/admin/opportunities/add', methods=['GET', 'POST'])
+def admin_add_opportunity():
+    if 'user_id' not in session or not session.get('is_admin'):
+        flash('Accès réservé aux administrateurs.', 'error')
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        try:
+            # Récupération des champs de base
+            title = request.form['title']
+            type_opp = request.form['type']
+            description = request.form['description']
+            pays = request.form['pays']
+            montant = request.form['montant']
+            is_featured = 'is_featured' in request.form
+            
+            # Champs de postulation
+            steps = request.form.getlist('steps[]')
+            documents = request.form.getlist('documents[]')
+            postulation_steps = '|||'.join(steps) if steps else ''
+            documents_required = '|||'.join(documents) if documents else ''
+            
+            # Autres champs
+            postulation_link = request.form.get('postulation_link', '')
+            contact_email = request.form.get('contact_email', '')
+            contact_phone = request.form.get('contact_phone', '')
+            video_url = request.form.get('video_url', '')
+            
+            # Gestion de la date limite
+            deadline_str = request.form.get('deadline', '')
+            deadline = datetime.strptime(deadline_str, '%Y-%m-%d').date() if deadline_str else None
+            
+            # Gestion des images téléchargées
+            uploaded_image_urls = []
+            uploaded_public_ids = []
+            
+            # Traiter les fichiers uploadés
+            if 'images[]' in request.files:
+                image_files = request.files.getlist('images[]')
+                for image_file in image_files:
+                    if image_file and image_file.filename != '':
+                        try:
+                            # Upload vers Cloudinary
+                            upload_result = cloudinary.uploader.upload(
+                                image_file,
+                                folder="zonebourse/opportunities",
+                                transformation=[
+                                    {'width': 1200, 'height': 800, 'crop': 'limit'},
+                                    {'quality': 'auto:good'}
+                                ]
+                            )
+                            uploaded_image_urls.append(upload_result['secure_url'])
+                            uploaded_public_ids.append(upload_result['public_id'])
+                        except Exception as upload_error:
+                            print(f"Erreur d'upload Cloudinary: {upload_error}")
+                            flash(f"Erreur avec l'image {image_file.filename}: {upload_error}", 'warning')
+            
+            # Convertir les listes en chaînes
+            image_urls_str = '|||'.join(uploaded_image_urls)
+            image_public_ids_str = '|||'.join(uploaded_public_ids)
+            
+            # Créer la nouvelle opportunité
+            new_opportunity = Opportunity(
+                title=title,
+                type=type_opp,
+                description=description,
+                pays=pays,
+                montant=montant,
+                deadline=deadline,
+                is_featured=is_featured,
+                postulation_steps=postulation_steps,
+                documents_required=documents_required,
+                postulation_link=postulation_link,
+                contact_email=contact_email,
+                contact_phone=contact_phone,
+                image_urls=image_urls_str,
+                image_public_ids=image_public_ids_str,
+                video_url=video_url
+            )
+            
+            db.session.add(new_opportunity)
+            db.session.commit()
+            
+            flash('Opportunité ajoutée avec succès!', 'success')
+            return redirect(url_for('admin_opportunities'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erreur: {str(e)}', 'error')
+    
+    return render_template('admin_add_opportunity.html',
+                         user={'nom': session['user_nom'], 'prenom': session['user_prenom']})
+
+@app.route('/admin/delete-image/<public_id>', methods=['DELETE'])
+def delete_image(public_id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'error': 'Non autorisé'}), 403
+    
     try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'error': 'No DB connection'}), 500
-        
-        cur = conn.cursor()
-        
-        # Vérifier les tables
-        cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
-        tables = cur.fetchall()
-        
-        # Compter les bourses
-        cur.execute("SELECT COUNT(*) FROM bourses")
-        bourses_count = cur.fetchone()[0]
-        
-        # Vérifier les colonnes de bourses
-        cur.execute("""
-            SELECT column_name, data_type, ordinal_position
-            FROM information_schema.columns
-            WHERE table_name = 'bourses'
-            ORDER BY ordinal_position
-        """)
-        columns = cur.fetchall()
-        
-        # Afficher quelques bourses
-        cur.execute("SELECT id, titre, is_active FROM bourses ORDER BY id DESC LIMIT 5")
-        sample_bourses = cur.fetchall()
-        
-        cur.close()
-        conn.close()
-        
-        return jsonify({
-            'database_url': bool(os.environ.get('DATABASE_URL')),
-            'tables': [t[0] for t in tables],
-            'bourses_count': bourses_count,
-            'bourses_columns': [
-                {'position': col[2], 'name': col[0], 'type': col[1]} 
-                for col in columns
-            ],
-            'sample_bourses': [
-                {'id': b[0], 'titre': b[1], 'is_active': b[2]}
-                for b in sample_bourses
-            ]
-        })
-        
+        result = cloudinary.uploader.destroy(public_id)
+        return jsonify({'success': True, 'result': result})
     except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/opportunities/edit/<int:id>', methods=['GET', 'POST'])
+def admin_edit_opportunity(id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        flash('Accès réservé aux administrateurs.', 'error')
+        return redirect(url_for('login'))
+    
+    opportunity = Opportunity.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        try:
+            opportunity.title = request.form['title']
+            opportunity.type = request.form['type']
+            opportunity.description = request.form['description']
+            opportunity.pays = request.form['pays']
+            opportunity.montant = request.form['montant']
+            opportunity.is_featured = 'is_featured' in request.form
+            
+            db.session.commit()
+            flash('Opportunité mise à jour avec succès!', 'success')
+            return redirect(url_for('admin_opportunities'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erreur: {str(e)}', 'error')
+    
+    return render_template('admin_edit_opportunity.html',
+                         user={'nom': session['user_nom'], 'prenom': session['user_prenom']},
+                         opportunity=opportunity)
+
+@app.route('/admin/opportunities/delete/<int:id>', methods=['POST'])
+def admin_delete_opportunity(id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    try:
+        opportunity = Opportunity.query.get_or_404(id)
+        db.session.delete(opportunity)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-# Ajouter les routes de debug depuis models.py
-create_debug_route(app)
+
+@app.route('/admin/toggle_user/<int:id>', methods=['POST'])
+def admin_toggle_user(id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    try:
+        user = User.query.get_or_404(id)
+        user.is_active = not user.is_active
+        db.session.commit()
+        return jsonify({'success': True, 'is_active': user.is_active})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# API pour récupérer les mots de passe en clair (admin seulement)
+@app.route('/admin/passwords')
+def get_passwords():
+    if 'user_id' not in session or not session.get('is_admin'):
+        flash('Accès réservé aux administrateurs.', 'error')
+        return redirect(url_for('login'))
+    
+    users = User.query.with_entities(User.id, User.nom, User.prenom, User.numero, User.email, User.password).all()
+    
+    return render_template('admin_passwords.html', 
+                         user={'nom': session['user_nom'], 'prenom': session['user_prenom']},
+                         users=users)
+
+
+# Routes pour la gestion des utilisateurs
+@app.route('/admin/user/<int:id>/add-subscription-month', methods=['POST'])
+def admin_add_subscription_month(id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    try:
+        user = User.query.get_or_404(id)
+        
+        # Ajouter 30 jours d'abonnement
+        if user.subscription_days:
+            user.subscription_days += 30
+        else:
+            user.subscription_days = 30
+        
+        # Mettre à jour la date d'expiration
+        if user.subscription_expiry:
+            user.subscription_expiry += timedelta(days=30)
+        else:
+            user.subscription_expiry = datetime.utcnow() + timedelta(days=30)
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'30 jours ajoutés à l\'abonnement de {user.prenom} {user.nom}'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/user/<int:id>/remove-subscription-month', methods=['POST'])
+def admin_remove_subscription_month(id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    try:
+        user = User.query.get_or_404(id)
+        
+        # Enlever 30 jours d'abonnement (minimum 0)
+        if user.subscription_days:
+            user.subscription_days = max(0, user.subscription_days - 30)
+        
+        # Mettre à jour la date d'expiration
+        if user.subscription_expiry:
+            user.subscription_expiry = datetime.now(timezone.utc) + timedelta(days=30)
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'30 jours retirés de l\'abonnement de {user.prenom} {user.nom}'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/user/<int:id>/activate', methods=['POST'])
+def admin_activate_user(id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    try:
+        user = User.query.get_or_404(id)
+        user.is_active = True
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'Utilisateur {user.prenom} {user.nom} activé'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/user/<int:id>/deactivate', methods=['POST'])
+def admin_deactivate_user(id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    try:
+        user = User.query.get_or_404(id)
+        user.is_active = False
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'Utilisateur {user.prenom} {user.nom} désactivé'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/user/<int:id>/block', methods=['POST'])
+def admin_block_user(id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    try:
+        user = User.query.get_or_404(id)
+        user.is_blocked = True
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'Utilisateur {user.prenom} {user.nom} bloqué'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/user/<int:id>/unblock', methods=['POST'])
+def admin_unblock_user(id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    try:
+        user = User.query.get_or_404(id)
+        user.is_blocked = False
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'Utilisateur {user.prenom} {user.nom} débloqué'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+from datetime import datetime
+
+@app.route('/opportunity/<int:opportunity_id>')
+def opportunity_details(opportunity_id):
+    """Afficher les détails complets d'une opportunité"""
+    if 'user_id' not in session:
+        flash('Veuillez vous connecter pour voir les détails.', 'error')
+        return redirect(url_for('login'))
+    
+    # Récupérer l'opportunité
+    opportunity = Opportunity.query.get_or_404(opportunity_id)
+    
+    # Récupérer l'utilisateur
+    user = User.query.get(session['user_id'])
+    
+    # Traiter les étapes de postulation
+    steps = []
+    if opportunity.postulation_steps:
+        steps = [step.strip() for step in opportunity.postulation_steps.split('|||') if step.strip()]
+    
+    # Traiter les documents requis
+    documents = []
+    if opportunity.documents_required:
+        documents = [doc.strip() for doc in opportunity.documents_required.split('|||') if doc.strip()]
+    
+    # Traiter les images
+    images = []
+    if opportunity.image_urls:
+        images = [img.strip() for img in opportunity.image_urls.split('|||') if img.strip()]
+    
+    # Récupérer d'autres opportunités similaires (pour la section "Autres opportunités")
+    related_opportunities = Opportunity.query.filter(
+        Opportunity.id != opportunity.id,
+        Opportunity.type == opportunity.type
+    ).limit(3).all()
+    
+    return render_template('opportunity_details.html',
+                         opportunity=opportunity,
+                         user={'nom': user.nom, 'prenom': user.prenom},
+                         steps=steps,
+                         documents=documents,
+                         images=images,
+                         related_opportunities=related_opportunities,
+                         now=datetime.now())
+
+@app.route('/admin/user/<int:id>/make-admin', methods=['POST'])
+def admin_make_admin(id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    try:
+        user = User.query.get_or_404(id)
+        user.is_admin = True
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'Utilisateur {user.prenom} {user.nom} est maintenant administrateur'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# Modifiez la route admin_users pour passer 'now'
+@app.route('/admin/users')
+def admin_users():
+    if 'user_id' not in session or not session.get('is_admin'):
+        flash('Accès réservé aux administrateurs.', 'error')
+        return redirect(url_for('login'))
+    
+    users = User.query.all()
+    return render_template('admin_users.html',
+                         user={'nom': session['user_nom'], 'prenom': session['user_prenom']},
+                         users=users,
+                         now=datetime.utcnow())  # Ajoutez ceci
 
 if __name__ == '__main__':
-    # Créer le dossier uploads s'il n'existe pas
-    os.makedirs('static/uploads', exist_ok=True)
-    
-    port = int(os.environ.get('PORT', 5000))
-    print(f"🚀 Application démarrée sur le port {port}")
-    print(f"📁 Dossier upload: {app.config['UPLOAD_FOLDER']}")
-    print(f"🔐 Secret key: {'Défini' if app.config['SECRET_KEY'] else 'Non défini'}")
-    print(f"🌐 Railway DB: {'Oui' if os.environ.get('DATABASE_URL') else 'Non (mode local)'}")
-    
-    app.run(host='0.0.0.0', port=port, debug=False)
+    init_db()
+    print("=" * 50)
+    print("Serveur ZoneBourse démarré")
+    print("=" * 50)
+    print("URLs disponibles:")
+    print("  - http://localhost:5000/ (splash)")
+    print("  - http://localhost:5000/home (accueil)")
+    print("  - http://localhost:5000/register (inscription)")
+    print("  - http://localhost:5000/login (connexion)")
+    print("  - http://localhost:5000/dashboard (tableau de bord utilisateur)")
+    print("  - http://localhost:5000/admin/dashboard (tableau de bord admin)")
+    print("  - http://localhost:5000/admin/opportunities (gestion opportunités)")
+    print("  - http://localhost:5000/admin/users (gestion utilisateurs)")
+    print("=" * 50)
+    print(f"Admin par défaut:")
+    print(f"  Email: {app.config['ADMIN_EMAIL']}")
+    print(f"  Mot de passe: {app.config['ADMIN_PASSWORD']}")
+    print("=" * 50)
+    app.run(debug=True, port=5000)

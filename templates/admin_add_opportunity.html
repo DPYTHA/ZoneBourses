@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajouter une opportunité - ZoneBourse Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #3B82F6;
+            --light-blue: #EFF6FF;
+            --dark-blue: #1E40AF;
+            --success: #10B981;
+            --danger: #EF4444;
+            --gray-100: #F3F4F6;
+            --gray-200: #E5E7EB;
+            --gray-700: #374151;
+            --gray-900: #111827;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f8fafc;
+            color: var(--gray-900);
+        }
+        
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: white;
+            border-right: 1px solid var(--gray-200);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .logo {
+            padding: 0 1.5rem 2rem;
+            border-bottom: 1px solid var(--gray-200);
+            margin-bottom: 2rem;
+        }
+        
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .logo span {
+            color: var(--primary-blue);
+        }
+        
+        .nav-links {
+            padding: 0 1rem;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--gray-700);
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .nav-item:hover {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+        }
+        
+        .nav-item.active {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 2rem;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: var(--primary-blue);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--dark-blue);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--gray-200);
+        }
+        
+        /* Form Styles */
+        .form-container {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid var(--gray-200);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.2s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            transform: scale(1.2);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--gray-200);
+        }
+        
+        .flash-messages {
+            margin-bottom: 2rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .flash {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .flash.success {
+            background: #D1FAE5;
+            color: #065F46;
+            border-left: 4px solid var(--success);
+        }
+        
+        .flash.error {
+            background: #FEE2E2;
+            color: #991B1B;
+            border-left: 4px solid var(--danger);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Nouveaux styles pour la section postulation */
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 2.5rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary-blue);
+            color: var(--dark-blue);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .section-title i {
+            color: var(--primary-blue);
+        }
+        
+        .form-section {
+            background: var(--light-blue);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--gray-200);
+        }
+        
+        .step-input-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            align-items: center;
+        }
+        
+        .step-input-group input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid var(--gray-200);
+            border-radius: 6px;
+        }
+        
+        .remove-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .remove-btn:hover {
+            background: #dc2626;
+        }
+        
+        .add-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .add-btn:hover {
+            background: #059669;
+        }
+        
+        .help-text {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            margin-top: 0.5rem;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+        
+        .document-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid var(--gray-200);
+        }
+        
+        .document-item input {
+            flex: 1;
+            border: none;
+            padding: 0;
+            background: transparent;
+        }
+        
+        .document-item input:focus {
+            outline: none;
+            box-shadow: none;
+        }
+        
+        .media-upload {
+            border: 2px dashed var(--gray-300);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .media-upload:hover {
+            border-color: var(--primary-blue);
+            background: rgba(59, 130, 246, 0.05);
+        }
+        
+        .media-upload i {
+            font-size: 2rem;
+            color: var(--primary-blue);
+            margin-bottom: 0.5rem;
+        }
+        
+        .preview-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .image-preview {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 1;
+        }
+        
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .preview-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .image-preview:hover .preview-overlay {
+            opacity: 1;
+        }
+        
+        .video-preview {
+            aspect-ratio: 16/9;
+            background: var(--gray-200);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-700);
+            margin-top: 1rem;
+            position: relative;
+        }
+        
+        .video-preview iframe {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            border: none;
+        }
+        
+        .clear-video {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        .tips-box {
+            background: #f0f9ff;
+            border-left: 4px solid var(--primary-blue);
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            margin-top: 2rem;
+        }
+        
+        .tips-box h4 {
+            color: var(--dark-blue);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 200px;
+            }
+            
+            .main-content {
+                margin-left: 200px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .admin-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                padding: 1rem;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-container {
+                padding: 1.5rem;
+            }
+            
+            .preview-container {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+        }
+        
+        /* Styles pour les images uploadées */
+        .image-preview {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        
+        .image-preview:hover {
+            transform: translateY(-3px);
+        }
+        
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .preview-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .image-preview:hover .preview-overlay {
+            opacity: 1;
+        }
+        
+        .preview-overlay .remove-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .preview-overlay .remove-btn:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1>
+                    <i class="fas fa-graduation-cap"></i>
+                    Zone<span>Bourse</span>
+                </h1>
+                <p style="font-size: 0.875rem; color: var(--gray-600); margin-top: 0.5rem;">
+                    Panneau d'administration
+                </p>
+            </div>
+            
+            <nav class="nav-links">
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-item">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+                <a href="{{ url_for('admin_opportunities') }}" class="nav-item">
+                    <i class="fas fa-briefcase"></i>
+                    Opportunités
+                </a>
+                <a href="{{ url_for('admin_users') }}" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    Utilisateurs
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="nav-item">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour au site
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Déconnexion
+                </a>
+            </nav>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1>
+                    <i class="fas fa-plus-circle"></i>
+                    Ajouter une opportunité
+                </h1>
+                <a href="{{ url_for('admin_opportunities') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour à la liste
+                </a>
+            </div>
+            
+            <!-- Messages flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash {{ category }}">
+                                <i class="fas fa-{{ 'check' if category == 'success' else 'exclamation' }}-circle"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Formulaire -->
+            <div class="form-container">
+                <!-- AJOUTEZ ENCTYPE ICI -->
+                <form method="POST" action="{{ url_for('admin_add_opportunity') }}" id="opportunityForm" enctype="multipart/form-data">
+                    
+                    <!-- Section 1: Informations de base -->
+                    <h3 class="section-title">
+                        <i class="fas fa-info-circle"></i>
+                        Informations de base
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label for="title">Titre de l'opportunité *</label>
+                        <input type="text" id="title" name="title" required 
+                               placeholder="Ex: Bourse d'Excellence Eiffel">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="type">Type *</label>
+                            <select id="type" name="type" required>
+                                <option value="">Sélectionnez un type</option>
+                                <option value="bourse">Bourse</option>
+                                <option value="admission">Admission</option>
+                                <option value="excellence">Excellence</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="montant">Montant / Détails financiers *</label>
+                            <input type="text" id="montant" name="montant" required 
+                                   placeholder="Ex: 1,180€ / mois, Complet, Variable">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pays">Pays / Région *</label>
+                        <input type="text" id="pays" name="pays" required 
+                               placeholder="Ex: France, International, États-Unis">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Description détaillée *</label>
+                        <textarea id="description" name="description" required 
+                                  placeholder="Décrivez l'opportunité en détail..."></textarea>
+                    </div>
+                    
+                    <!-- Section 2: Postulation -->
+                    <h3 class="section-title">
+                        <i class="fas fa-file-import"></i>
+                        Processus de postulation
+                    </h3>
+                    
+                    <div class="form-section">
+                        <div class="form-group">
+                            <label>Étapes de postulation *</label>
+                            <p class="help-text">Décrivez chaque étape du processus de candidature</p>
+                            <div id="stepsContainer">
+                                <div class="step-input-group">
+                                    <input type="text" name="steps[]" placeholder="Étape 1: Préparer les documents" required>
+                                    <button type="button" class="remove-btn" onclick="removeStep(this)" style="display: none;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" class="add-btn" onclick="addStep()">
+                                <i class="fas fa-plus"></i> Ajouter une étape
+                            </button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Documents requis *</label>
+                            <p class="help-text">Listez tous les documents nécessaires pour la candidature</p>
+                            <div id="documentsContainer">
+                                <div class="document-item">
+                                    <input type="text" name="documents[]" placeholder="Ex: CV à jour" required>
+                                    <button type="button" class="remove-btn" onclick="removeDocument(this)" style="display: none;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" class="add-btn" onclick="addDocument()">
+                                <i class="fas fa-plus"></i> Ajouter un document
+                            </button>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="postulation_link">Lien de postulation</label>
+                                <input type="url" id="postulation_link" name="postulation_link" 
+                                       placeholder="https://...">
+                                <p class="help-text">Lien vers le formulaire officiel de candidature</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="deadline">Date limite</label>
+                                <input type="date" id="deadline" name="deadline">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contact_email">Email de contact</label>
+                                <input type="email" id="contact_email" name="contact_email" 
+                                       placeholder="contact@universite.fr">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="contact_phone">Téléphone de contact</label>
+                                <input type="tel" id="contact_phone" name="contact_phone" 
+                                       placeholder="+33 1 23 45 67 89">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Section 3: Médias visuels -->
+                    <h3 class="section-title">
+                        <i class="fas fa-images"></i>
+                        Médias visuels
+                    </h3>
+                    
+                    <div class="form-section">
+                        <!-- Section Upload d'images -->
+                        <div class="form-group">
+                            <label>Télécharger des images</label>
+                            <div class="media-upload" id="imageUploadArea">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Glissez-déposez vos images ici ou cliquez pour sélectionner</p>
+                                <p class="help-text" style="margin-top: 0.5rem;">
+                                    Formats acceptés: JPG, PNG, GIF (max 5MB par image)
+                                </p>
+                            </div>
+                            
+                            <!-- Input file caché -->
+                            <input type="file" id="imageInput" name="images[]" multiple 
+                                   accept=".jpg,.jpeg,.png,.gif,.webp" 
+                                   style="display: none;" 
+                                   onchange="handleImageUpload(event)">
+                            
+                            <!-- Zone d'affichage des images sélectionnées -->
+                            <div id="selectedImagesPreview" class="preview-container"></div>
+                            
+                            <!-- Bouton de sélection -->
+                            <button type="button" class="add-btn" onclick="document.getElementById('imageInput').click()" 
+                                    style="margin-top: 1rem;">
+                                <i class="fas fa-folder-open"></i> Parcourir les fichiers
+                            </button>
+                            
+                            <!-- Information sur les images uploadées -->
+                            <div id="uploadProgress" style="display: none; margin-top: 1rem;">
+                                <div class="upload-info" style="background: var(--light-blue); padding: 0.75rem; border-radius: 6px;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                                        <span id="uploadStatus">Prêt à uploader</span>
+                                        <span id="uploadCount">0/0 images</span>
+                                    </div>
+                                    <progress id="uploadProgressBar" value="0" max="100" 
+                                              style="width: 100%; height: 8px; margin-top: 0.5rem;"></progress>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- URLs d'images existantes (optionnel) -->
+                        <div class="form-group">
+                            <label for="existing_images">URLs d'images externes (optionnel)</label>
+                            <textarea id="existing_images" name="existing_images" 
+                                      placeholder="Collez les URLs d'images externes, une par ligne
+        Ex: 
+        https://exemple.com/image1.jpg
+        https://exemple.com/image2.jpg"></textarea>
+                            <p class="help-text">Utilisez ce champ si vous avez déjà des images en ligne</p>
+                        </div>
+                        
+                        <!-- Prévisualisation vidéo -->
+                        <div class="form-group">
+                            <label for="video_url">Lien vidéo YouTube/Vimeo (optionnel)</label>
+                            <input type="url" id="video_url" name="video_url" 
+                                   placeholder="https://youtube.com/watch?v=... ou https://vimeo.com/..."
+                                   oninput="updateVideoPreview()">
+                            <p class="help-text">Collez le lien complet de la vidéo</p>
+                            
+                            <div id="videoPreview" class="video-preview" style="display: none;"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Conseils pour les médias :</label>
+                            <div class="tips-box">
+                                <h4><i class="fas fa-lightbulb"></i> Bonnes pratiques</h4>
+                                <ul style="margin: 0; padding-left: 1.2rem; color: var(--gray-700); font-size: 0.875rem; line-height: 1.5;">
+                                    <li>Utilisez des images de haute qualité (minimum 800x600px)</li>
+                                    <li>Les images doivent illustrer l'université ou le programme</li>
+                                    <li>Pour les vidéos : privilégiez les témoignages d'étudiants</li>
+                                    <li>Maximum 5 images par opportunité</li>
+                                    <li>Formats acceptés : JPG, PNG, GIF</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Section 4: Options -->
+                    <h3 class="section-title">
+                        <i class="fas fa-cog"></i>
+                        Options
+                    </h3>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="is_featured" name="is_featured">
+                            <label for="is_featured" style="margin-bottom: 0;">
+                                Mettre en vedette (carte spéciale avec fond bleu)
+                            </label>
+                        </div>
+                        <p class="help-text">
+                            Les opportunités en vedette apparaissent avec un design spécial sur le site et sont mises en avant
+                        </p>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <a href="{{ url_for('admin_opportunities') }}" class="btn btn-secondary">
+                            Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Enregistrer l'opportunité
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Informations -->
+            <div style="margin-top: 2rem; padding: 1.5rem; background: var(--light-blue); border-radius: 8px; border: 1px solid var(--gray-200);">
+                <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                    <i class="fas fa-info-circle"></i>
+                    Conseils pour une bonne opportunité
+                </h3>
+                <ul style="color: var(--gray-700); line-height: 1.6;">
+                    <li><strong>Titre :</strong> Soyez clair et précis. Ex: "Bourse d'Excellence Eiffel"</li>
+                    <li><strong>Description :</strong> Détaillez les avantages, conditions, et procédure</li>
+                    <li><strong>Montant :</strong> Indiquez clairement le montant ou les avantages financiers</li>
+                    <li><strong>Pays :</strong> Précisez la localisation ou si c'est international</li>
+                    <li><strong>Postulation :</strong> Décrivez précisément le processus étape par étape</li>
+                    <li><strong>Documents :</strong> Listez tous les documents requis sans oublier les traductions</li>
+                    <li><strong>En vedette :</strong> Réservez pour les opportunités les plus importantes</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales pour les étapes et documents
+        let stepCount = 1;
+        let documentCount = 1;
+        
+        // Ajouter une étape de postulation
+        function addStep() {
+            stepCount++;
+            const container = document.getElementById('stepsContainer');
+            const newStep = document.createElement('div');
+            newStep.className = 'step-input-group';
+            newStep.innerHTML = `
+                <input type="text" name="steps[]" placeholder="Étape ${stepCount}: ..." required>
+                <button type="button" class="remove-btn" onclick="removeStep(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            container.appendChild(newStep);
+            
+            // Afficher le bouton de suppression sur le premier élément
+            if (stepCount === 2) {
+                container.querySelector('.step-input-group:first-child .remove-btn').style.display = 'flex';
+            }
+        }
+        
+        // Supprimer une étape
+        function removeStep(button) {
+            const stepGroup = button.closest('.step-input-group');
+            stepGroup.remove();
+            stepCount--;
+            
+            // Renommer les étapes restantes
+            const steps = document.querySelectorAll('#stepsContainer .step-input-group');
+            steps.forEach((step, index) => {
+                const input = step.querySelector('input');
+                input.placeholder = `Étape ${index + 1}: ...`;
+            });
+            
+            // Cacher le bouton de suppression s'il ne reste qu'une étape
+            if (stepCount === 1) {
+                document.querySelector('#stepsContainer .remove-btn').style.display = 'none';
+            }
+        }
+        
+        // Ajouter un document requis
+        function addDocument() {
+            documentCount++;
+            const container = document.getElementById('documentsContainer');
+            const newDoc = document.createElement('div');
+            newDoc.className = 'document-item';
+            newDoc.innerHTML = `
+                <input type="text" name="documents[]" placeholder="Ex: Lettre de motivation" required>
+                <button type="button" class="remove-btn" onclick="removeDocument(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            container.appendChild(newDoc);
+            
+            // Afficher le bouton de suppression sur le premier élément
+            if (documentCount === 2) {
+                container.querySelector('.document-item:first-child .remove-btn').style.display = 'flex';
+            }
+        }
+        
+        // Supprimer un document
+        function removeDocument(button) {
+            const docItem = button.closest('.document-item');
+            docItem.remove();
+            documentCount--;
+            
+            // Cacher le bouton de suppression s'il ne reste qu'un document
+            if (documentCount === 1) {
+                document.querySelector('#documentsContainer .remove-btn').style.display = 'none';
+            }
+        }
+        
+        // Mettre à jour la prévisualisation de la vidéo
+        function updateVideoPreview() {
+            const videoUrl = document.getElementById('video_url').value;
+            const preview = document.getElementById('videoPreview');
+            
+            if (!videoUrl) {
+                preview.style.display = 'none';
+                return;
+            }
+            
+            let embedUrl = '';
+            
+            // YouTube
+            if (videoUrl.includes('youtube.com/watch?v=')) {
+                const videoId = videoUrl.split('v=')[1];
+                const ampersandPosition = videoId.indexOf('&');
+                const finalVideoId = ampersandPosition !== -1 ? videoId.substring(0, ampersandPosition) : videoId;
+                embedUrl = `https://www.youtube.com/embed/${finalVideoId}`;
+            }
+            // YouTube short URL
+            else if (videoUrl.includes('youtu.be/')) {
+                const videoId = videoUrl.split('youtu.be/')[1];
+                embedUrl = `https://www.youtube.com/embed/${videoId}`;
+            }
+            // Vimeo
+            else if (videoUrl.includes('vimeo.com/')) {
+                const videoId = videoUrl.split('vimeo.com/')[1];
+                embedUrl = `https://player.vimeo.com/video/${videoId}`;
+            }
+            
+            if (embedUrl) {
+                preview.innerHTML = `
+                    <button type="button" class="clear-video" onclick="clearVideo()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <iframe src="${embedUrl}" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen>
+                    </iframe>
+                `;
+                preview.style.display = 'block';
+            } else {
+                preview.innerHTML = `
+                    <div style="text-align: center;">
+                        <i class="fas fa-video" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                        <p>Lien vidéo valide détecté</p>
+                        <button type="button" class="add-btn" onclick="clearVideo()" style="margin-top: 1rem;">
+                            <i class="fas fa-times"></i> Effacer
+                        </button>
+                    </div>
+                `;
+                preview.style.display = 'flex';
+                preview.style.flexDirection = 'column';
+                preview.style.alignItems = 'center';
+                preview.style.justifyContent = 'center';
+            }
+        }
+        
+        // Effacer la vidéo
+        function clearVideo() {
+            document.getElementById('video_url').value = '';
+            document.getElementById('videoPreview').style.display = 'none';
+        }
+        
+        // Aperçu en temps réel du titre
+        const titleInput = document.getElementById('title');
+        const preview = document.createElement('div');
+        preview.style.marginTop = '0.5rem';
+        preview.style.fontSize = '0.875rem';
+        preview.style.color = 'var(--gray-600)';
+        preview.innerHTML = '<strong>Aperçu :</strong> <span id="titlePreview"></span>';
+        titleInput.parentNode.appendChild(preview);
+        
+        titleInput.addEventListener('input', function() {
+            document.getElementById('titlePreview').textContent = this.value || '(vide)';
+        });
+        
+        // Initialiser l'aperçu
+        document.getElementById('titlePreview').textContent = titleInput.value || '(vide)';
+        
+        // Fermer les messages flash après 5 secondes
+        setTimeout(function() {
+            const flashes = document.querySelectorAll('.flash');
+            flashes.forEach(flash => {
+                flash.style.opacity = '0';
+                setTimeout(() => flash.remove(), 300);
+            });
+        }, 5000);
+        
+        // Initialiser les compteurs
+        document.addEventListener('DOMContentLoaded', function() {
+            const initialSteps = document.querySelectorAll('#stepsContainer .step-input-group').length;
+            const initialDocs = document.querySelectorAll('#documentsContainer .document-item').length;
+            stepCount = initialSteps;
+            documentCount = initialDocs;
+        });
+    </script>
+    
+    <script>
+        // Variables pour la gestion des images - OPTION 3
+        let selectedImages = [];
+        let uploadedImageUrls = [];
+        let uploadedPublicIds = [];
+
+        // Gestion du glisser-déposer
+        const imageUploadArea = document.getElementById('imageUploadArea');
+        const imageInput = document.getElementById('imageInput');
+
+        imageUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            imageUploadArea.style.borderColor = 'var(--primary-blue)';
+            imageUploadArea.style.background = 'rgba(59, 130, 246, 0.05)';
+        });
+
+        imageUploadArea.addEventListener('dragleave', () => {
+            imageUploadArea.style.borderColor = 'var(--gray-300)';
+            imageUploadArea.style.background = '';
+        });
+
+        imageUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            imageUploadArea.style.borderColor = 'var(--gray-300)';
+            imageUploadArea.style.background = '';
+            
+            const files = e.dataTransfer.files;
+            handleImageFiles(files);
+        });
+
+        // Gérer la sélection de fichiers
+        function handleImageUpload(event) {
+            const files = event.target.files;
+            handleImageFiles(files);
+        }
+
+        function handleImageFiles(files) {
+            const maxImages = 10;
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            
+            for (let file of files) {
+                // Vérifier le nombre d'images
+                if (selectedImages.length >= maxImages) {
+                    alert(`Maximum ${maxImages} images autorisées`);
+                    break;
+                }
+                
+                // Vérifier la taille
+                if (file.size > maxSize) {
+                    alert(`L'image ${file.name} dépasse la taille maximale de 5MB`);
+                    continue;
+                }
+                
+                // Vérifier le type
+                if (!file.type.match('image.*')) {
+                    alert(`Le fichier ${file.name} n'est pas une image valide`);
+                    continue;
+                }
+                
+                selectedImages.push(file);
+            }
+            
+            updateImagePreview();
+            updateUploadInfo();
+        }
+
+        // Mettre à jour la prévisualisation
+        function updateImagePreview() {
+            const previewContainer = document.getElementById('selectedImagesPreview');
+            previewContainer.innerHTML = '';
+            
+            selectedImages.forEach((file, index) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const preview = document.createElement('div');
+                    preview.className = 'image-preview';
+                    preview.innerHTML = `
+                        <img src="${e.target.result}" alt="Prévisualisation">
+                        <div class="preview-overlay">
+                            <button type="button" class="remove-btn" onclick="removeImage(${index})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <div style="position: absolute; bottom: 5px; left: 5px; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">
+                            ${formatFileSize(file.size)}
+                        </div>
+                    `;
+                    previewContainer.appendChild(preview);
+                };
+                
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Supprimer une image
+        function removeImage(index) {
+            selectedImages.splice(index, 1);
+            updateImagePreview();
+            updateUploadInfo();
+        }
+
+        // Formater la taille du fichier
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        // Mettre à jour les informations d'upload
+        function updateUploadInfo() {
+            const uploadCount = document.getElementById('uploadCount');
+            const uploadStatus = document.getElementById('uploadStatus');
+            const uploadProgress = document.getElementById('uploadProgress');
+            
+            if (selectedImages.length > 0) {
+                uploadProgress.style.display = 'block';
+                uploadCount.textContent = `${selectedImages.length} image(s) sélectionnée(s)`;
+                uploadStatus.textContent = 'Prêt à uploader après soumission';
+            } else {
+                uploadProgress.style.display = 'none';
+            }
+        }
+
+        // Gérer la soumission du formulaire - OPTION 3 AVEC TIMESTAMP
+        document.getElementById('opportunityForm').addEventListener('submit', async function(e) {
+            // Empêcher la soumission normale si on a des images à uploader
+            if (selectedImages.length > 0) {
+                e.preventDefault();
+                
+                const uploadProgressBar = document.getElementById('uploadProgressBar');
+                const uploadStatus = document.getElementById('uploadStatus');
+                
+                // Afficher le statut d'upload
+                uploadStatus.textContent = 'Upload en cours...';
+                uploadProgressBar.value = 0;
+                
+                try {
+                    // Uploader chaque image
+                    for (let i = 0; i < selectedImages.length; i++) {
+                        const file = selectedImages[i];
+                        
+                        // Créer un FormData pour l'image avec timestamp
+                        const formData = new FormData();
+                        formData.append('image', file);
+                        
+                        // AJOUT DU TIMESTAMP (Option 3)
+                        const timestamp = Math.floor(Date.now() / 1000);
+                        formData.append('timestamp', timestamp);
+                        
+                        // Envoyer à votre endpoint d'upload
+                        const response = await fetch('/admin/upload-image', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            uploadedImageUrls.push(result.url);
+                            uploadedPublicIds.push(result.public_id);
+                            uploadProgressBar.value = ((i + 1) / selectedImages.length) * 100;
+                        } else {
+                            throw new Error(`Erreur avec l'image ${file.name}: ${result.error}`);
+                        }
+                    }
+                    
+                    // Ajouter les URLs aux champs cachés
+                    const imageUrlsField = document.createElement('input');
+                    imageUrlsField.type = 'hidden';
+                    imageUrlsField.name = 'uploaded_image_urls';
+                    imageUrlsField.value = uploadedImageUrls.join('|||');
+                    this.appendChild(imageUrlsField);
+                    
+                    // Ajouter les public_ids aux champs cachés
+                    const publicIdsField = document.createElement('input');
+                    publicIdsField.type = 'hidden';
+                    publicIdsField.name = 'uploaded_public_ids';
+                    publicIdsField.value = uploadedPublicIds.join('|||');
+                    this.appendChild(publicIdsField);
+                    
+                    // Soumettre le formulaire
+                    uploadStatus.textContent = 'Upload terminé, enregistrement...';
+                    setTimeout(() => {
+                        this.submit();
+                    }, 1000);
+                    
+                } catch (error) {
+                    uploadStatus.textContent = 'Erreur lors de l\'upload';
+                    console.error('Upload error:', error);
+                    alert(`Erreur d'upload: ${error.message}\n\nVous pouvez essayer de soumettre à nouveau le formulaire.`);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

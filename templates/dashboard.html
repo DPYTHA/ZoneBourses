@@ -3,632 +3,600 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="web icon" href="/static/images/logo.jpeg">
-    <title>Tableau de bord - ZoneBourse</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>ZoneBourse - Tableau de bord</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Styles CORRIGÉS pour le système de favoris */
-        .bourse-card {
-            position: relative; /* IMPORTANT: pour le positionnement absolu du cœur */
+        :root {
+            --primary-blue: #3B82F6;
+            --light-blue: #EFF6FF;
+            --dark-blue: #1E40AF;
+            --gray-100: #F3F4F6;
+            --gray-200: #E5E7EB;
+            --gray-700: #374151;
+            --gray-900: #111827;
         }
         
-        .bourse-header {
-            position: relative;
-            margin-bottom: 15px;
+        .dashboard {
+            background: var(--light-blue);
+            min-height: 100vh;
         }
         
-        .heart-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(255, 255, 255, 0.95);
-            border: none;
-            border-radius: 50%;
+        .dashboard-header {
+            background: white;
+            padding: 2rem 2.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .dashboard-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .logo i {
+            font-size: 2rem;
+            color: var(--primary-blue);
+        }
+        
+        .logo h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        
+        .logo span {
+            color: var(--primary-blue);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .user-avatar {
             width: 40px;
             height: 40px;
-            display: flex !important; /* FORCER l'affichage */
+            background: var(--gray-100);
+            border-radius: 50%;
+            display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            z-index: 1000 !important; 
-            visibility: visible !important;
-            opacity: 1 !important;
+            color: var(--gray-700);
         }
         
-        .heart-btn:hover {
-            background: white;
-            transform: scale(1.1);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        .user-info h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0;
         }
         
-        .heart-btn i {
-            font-size: 1.3rem;
-            transition: all 0.3s ease;
-        }
-        
-        .heart-btn .fas {
-            color: #e53e3e !important;
-        }
-        
-        .heart-btn .far {
-            color: #666;
-        }
-        
-        /* Animation de pulsation */
-        @keyframes heartBeat {
-            0% { transform: scale(1); }
-            25% { transform: scale(1.3); }
-            50% { transform: scale(1); }
-            75% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-        
-        .heart-btn.liked {
-            animation: heartBeat 0.6s ease;
-        }
-        
-        /* Filtres */
-        .btn-filter {
-            padding: 8px 16px;
-            border: 2px solid var(--primary-green);
-            background: white;
-            color: var(--primary-green);
-            border-radius: 20px;
-            cursor: pointer;
+        .btn-logout {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.875rem;
             font-weight: 500;
-            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
         }
         
-        .btn-filter:hover {
-            background: var(--primary-green);
+        .btn-logout:hover {
+            background: var(--gray-200);
+        }
+        
+        .admin-link {
+            background: var(--primary-blue);
             color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 1rem;
         }
         
-        .btn-filter.active {
-            background: var(--primary-green);
-            color: white;
+        .hero-section {
+            max-width: 800px;
+            margin: 0 auto 3rem;
+            text-align: center;
         }
         
-        /* Notifications */
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .hero-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+            line-height: 1.2;
         }
         
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-
-        /* Styles pour s'assurer que les cartes sont bien positionnées */
-        .bourses-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
+        .hero-subtitle {
+            font-size: 1.125rem;
+            color: var(--gray-700);
+            margin-bottom: 2rem;
         }
         
-        .bourse-card {
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .search-bar {
+            display: flex;
             background: white;
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid var(--gray-200);
         }
         
-        .bourse-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        .search-bar input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: none;
+            font-size: 1rem;
+            outline: none;
+        }
+        
+        .search-bar button {
+            padding: 0 1.5rem;
+            background: var(--primary-blue);
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .search-bar button:hover {
+            background: var(--dark-blue);
+        }
+        
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-tag {
+            padding: 0.5rem 1rem;
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 20px;
+            font-size: 0.875rem;
+            color: var(--gray-700);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-tag.active {
+            background: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+        
+        .filter-tag:hover {
+            background: var(--gray-100);
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+        
+        .divider {
+            height: 1px;
+            background: var(--gray-200);
+            margin: 3rem auto;
+            max-width: 800px;
+        }
+        
+        .opportunities-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem 4rem;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .opportunities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .opportunity-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid var(--gray-200);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .opportunity-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .opportunity-card.featured {
+            background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+            color: white;
+        }
+        
+        .opportunity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .opportunity-type {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .featured .opportunity-type {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .opportunity-amount {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        
+        .featured .opportunity-amount {
+            color: white;
+        }
+        
+        .opportunity-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+        
+        .featured .opportunity-title {
+            color: white;
+        }
+        
+        .opportunity-desc {
+            color: var(--gray-700);
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            flex-grow: 1;
+        }
+        
+        .featured .opportunity-desc {
+            color: rgba(255,255,255,0.9);
+        }
+        
+        .opportunity-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--gray-600);
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+        
+        .featured .opportunity-meta {
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .btn-details {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: auto;
+        }
+        
+        .featured .btn-details {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .featured .btn-details:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .btn-details:hover {
+            background: var(--dark-blue);
+        }
+        
+        .no-opportunities {
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray-600);
+            grid-column: 1 / -1;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-header {
+                padding: 1.5rem;
+            }
+            
+            .dashboard-nav {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+            
+            .user-info {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .hero-title {
+                font-size: 2rem;
+            }
+            
+            .opportunities-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
-<body>
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="/" class="nav-logo">
-                <svg class="logo-svg" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
-                </svg>
-                ZoneBourse
-            </a>
-            <div class="nav-menu" id="navMenu">
-                <a href="#bourses" class="nav-link">Bourses</a>
-                <a href="#admissions" class="nav-link">Admissions</a>
-                <a href="#emplois" class="nav-link">Emplois & Visas</a>
-                <span class="user-welcome" id="userWelcome">Bonjour, {{ user.prenom }}</span>
-                {% if user.is_admin %}
-                <a href="/admin" class="nav-link">Administration</a>
-                {% endif %}
-                <a href="/api/logout" class="nav-link" id="logoutBtn">Déconnexion</a>
-            </div>
-            <div class="nav-toggle" id="navToggle">
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Tableau de bord -->
-    <div class="dashboard">
-        <div class="dashboard-header">
-            <div>
-                <h1 class="welcome-message">Bonjour, <span id="userName">{{ user.prenom }} {{ user.nom }}</span> !</h1>
-                <p style="color: var(--text-color); margin-top: 8px;">
-                    <strong>Email:</strong> {{ user.email or 'Non renseigné' }} | 
-                    <strong>Téléphone:</strong> {{ user.numero_whatsapp }} |
-                    <strong>Membre depuis:</strong> {{ user_info.date_inscription }}
-                </p>
-            </div>
-            <div class="search-box">
-                <input type="text" class="search-input" id="searchInput" placeholder="Rechercher une bourse, une université, un pays...">
-                <button class="search-btn" id="searchBtn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                    </svg>
-                    Rechercher
-                </button>
-            </div>
-        </div>
-
-        <!-- Section Profil Utilisateur -->
-        <div class="section" style="padding: 40px 0;">
-            <div class="stat-card" style="text-align: left;">
-                <h3 style="margin-bottom: 20px; color: var(--dark-gray); display: flex; align-items: center; gap: 10px;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                    </svg>
-                    Mon Profil
-                </h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                    <div>
-                        <strong>Nom complet:</strong><br>
-                        {{ user.prenom }} {{ user.nom }}
+<body class="dashboard">
+    <!-- Messages flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">
+                        <i class="fas fa-{{ 'check' if category == 'success' else 'exclamation' }}-circle"></i>
+                        {{ message }}
                     </div>
-                    <div>
-                        <strong>Email:</strong><br>
-                        {{ user.email or 'Non renseigné' }}
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <div class="dashboard-header">
+        <nav class="dashboard-nav">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <h1>Zone<span>Bourse</span></h1>
+            </div>
+            
+            <div class="user-info">
+                <div>
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
                     </div>
-                    <div>
-                        <strong>Numéro WhatsApp:</strong><br>
-                        {{ user.numero_whatsapp }}
-                    </div>
-                    <div>
-                        <strong>Statut:</strong><br>
-                        {% if user.is_admin %}
-                        <span style="color: var(--primary-green); font-weight: 600;">Administrateur</span>
-                        {% else %}
-                        <span style="color: var(--sky-blue); font-weight: 600;">Utilisateur</span>
+                </div>
+                <div>
+                    <h3>{{ user.prenom }} {{ user.nom }}</h3>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a href="{{ url_for('logout') }}" class="btn-logout">
+                            <i class="fas fa-sign-out-alt"></i> Déconnexion
+                        </a>
+                        {% if session.get('is_admin') %}
+                        <a href="{{ url_for('admin_dashboard') }}" class="admin-link">
+                            <i class="fas fa-cog"></i> Admin
+                        </a>
                         {% endif %}
                     </div>
-                    <div>
-                        <strong>Date d'inscription:</strong><br>
-                        {{ user_info.date_inscription }}
-                    </div>
-                    <div>
-                        <strong>Compte:</strong><br>
-                        <span style="color: var(--light-green); font-weight: 600;">● Actif</span>
-                    </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Statistiques du Dashboard -->
-        <div class="dashboard-stats">
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="40" height="40">
-                        <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>
-                    </svg>
+        </nav>
+        
+        <div class="hero-section">
+            <h1 class="hero-title">Trouvez votre avenir</h1>
+            <p class="hero-subtitle">Explorez des milliers d'opportunités académiques à travers le monde.</p>
+            
+            <div class="search-container">
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Rechercher une bourse, une université...">
+                    <button id="searchBtn"><i class="fas fa-search"></i></button>
                 </div>
-                <div class="stat-number" id="statsBourses">{{ bourses|length }}</div>
-                <div class="stat-label">Bourses disponibles</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="40" height="40">
-                        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/>
-                    </svg>
-                </div>
-                <div class="stat-number" id="statsCandidatures">0</div>
-                <div class="stat-label">Candidatures envoyées</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="40" height="40">
-                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                    </svg>
-                </div>
-                <div class="stat-number" id="statsFavoris">0</div>
-                <div class="stat-label">Favoris</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="40" height="40">
-                        <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
-                    </svg>
-                </div>
-                <div class="stat-number" id="statsAlertes">0</div>
-                <div class="stat-label">Alertes actives</div>
-            </div>
-        </div>
-
-        <!-- Résultats de recherche -->
-        <div id="searchResults" style="display: none; margin-bottom: 30px;">
-            <h3 style="color: var(--dark-gray); margin-bottom: 15px;">
-                Résultats de recherche : <span id="resultsCount">0</span> bourse(s) trouvée(s)
-            </h3>
-            <div id="resultsContainer" class="bourses-grid">
-                <!-- Les résultats de recherche seront affichés ici -->
-            </div>
-        </div>
-
-        <!-- Filtres -->
-        <div style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center;">
-            <h2 class="section-title" style="margin: 0;">Bourses Disponibles</h2>
-            <div style="display: flex; gap: 10px; margin-left: auto;">
-                <button class="btn-filter active" id="filterAll" data-filter="all">Toutes</button>
-                <button class="btn-filter" id="filterFavorites" data-filter="favorites">
-                    <i class="fas fa-heart" style="color: #e53e3e; margin-right: 5px;"></i>
-                    Favoris
-                </button>
-            </div>
-        </div>
-
-        <!-- Grille des bourses AVEC BOUTONS CŒUR VISIBLES -->
-        <div class="bourses-grid" id="boursesGrid">
-            {% for bourse in bourses %}
-            <div class="bourse-card" 
-                 data-searchable="{{ bourse.titre.lower() }} {{ bourse.universite.lower() }} {{ bourse.pays.lower() }} {{ bourse.description.lower() }} {{ bourse.niveau_etude.lower() }} {{ bourse.domaine_etude.lower() }}"
-                 data-bourse-id="{{ bourse.id }}">
                 
-                <!-- En-tête avec image et bouton cœur BIEN VISIBLE -->
-                <div class="bourse-header">
-                    <div class="bourse-image">
-                        {% if bourse.image_url %}
-                        <img src="{{ bourse.image_url }}" alt="{{ bourse.titre }}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px;">
-                        {% else %}
-                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 120px; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
-                            <svg viewBox="0 0 48 48" fill="white" width="60" height="60">
-                                <path d="M24 4L6 14v20l18 10 18-10V14L24 4zm0 6l12 6.87v14.26L24 38 12 31.13V16.87L24 10z"/>
-                                <path d="M20 22l8 4.62V34l-8-4.62V22z"/>
-                            </svg>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <!-- BOUTON CŒUR BIEN VISIBLE MAINTENANT -->
-                    <button class="heart-btn" data-bourse-id="{{ bourse.id }}" title="Ajouter aux favoris" style="display: flex !important; visibility: visible !important; opacity: 1 !important;">
-                        <i class="far fa-heart"></i>
-                    </button>
-                </div>
-
-                <div class="bourse-content">
-                    <h3 class="bourse-title">{{ bourse.titre }}</h3>
-                    <div class="bourse-university">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
-                        </svg>
-                        {{ bourse.universite }}, {{ bourse.pays }}
-                    </div>
-                    <p class="bourse-description">{{ bourse.description[:150] }}{% if bourse.description|length > 150 %}...{% endif %}</p>
-                    <div class="bourse-details">
-                        <div class="bourse-detail">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>
-                            </svg>
-                            <span>{{ bourse.niveau_etude }}</span>
-                        </div>
-                        <div class="bourse-detail">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91 2.56.62 4.18 1.54 4.18 3.67 0 1.9-1.51 3-3.23 3.31z"/>
-                            </svg>
-                            <span>{{ bourse.montant_bourse }}</span>
-                        </div>
-                        <div class="bourse-detail">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
-                            </svg>
-                            <span>{{ bourse.date_limite }}</span>
-                        </div>
-                    </div>
-                    <div class="bourse-actions">
-                        <a href="/bourse/{{ bourse.id }}" class="btn-small btn-outline">Voir détails</a>
-                        <button class="btn-small btn-filled btn-postuler" data-bourse-id="{{ bourse.id }}">Postuler</button>
-                    </div>
+                <div class="filters">
+                    <span class="filter-tag active" data-filter="all">Toutes les catégories</span>
+                    <span class="filter-tag" data-filter="bourse">Bourses</span>
+                    <span class="filter-tag" data-filter="admission">Admissions</span>
+                    <span class="filter-tag" data-filter="excellence">Excellence</span>
                 </div>
             </div>
-            {% endfor %}
         </div>
     </div>
 
-    <script src="/static/js/script.js"></script>
+    <div class="divider"></div>
+
+    <main class="opportunities-section">
+        <h2 class="section-title">Opportunités Récentes</h2>
+        
+        <div class="opportunities-grid" id="opportunitiesGrid">
+            {% if opportunities %}
+                {% for opportunity in opportunities %}
+                <div class="opportunity-card {% if opportunity.is_featured %}featured{% endif %}" 
+                     data-type="{{ opportunity.type }}">
+                    <div class="opportunity-header">
+                        <span class="opportunity-type">
+                            {% if opportunity.type == 'bourse' %}
+                                Bourse
+                            {% elif opportunity.type == 'admission' %}
+                                Admission
+                            {% elif opportunity.type == 'excellence' %}
+                                Excellence
+                            {% else %}
+                                {{ opportunity.type|title }}
+                            {% endif %}
+                        </span>
+                        <span class="opportunity-amount">{{ opportunity.montant }}</span>
+                    </div>
+                    <h3 class="opportunity-title">{{ opportunity.title }}</h3>
+                    <p class="opportunity-desc">{{ opportunity.description }}</p>
+                    <div class="opportunity-meta">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>{{ opportunity.pays }}</span>
+                    </div>
+                    <a href="{{ url_for('opportunity_details', opportunity_id=opportunity.id) }}" class="btn-details">
+    <i class="fas fa-eye"></i> Voir les détails
+</a>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-opportunities">
+                    <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; color: var(--gray-400);"></i>
+                    <h3>Aucune opportunité disponible</h3>
+                    <p>Revenez plus tard pour découvrir de nouvelles opportunités.</p>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- Modal pour les détails -->
+    <div id="detailsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
     <script>
-        // Initialisation du dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Initialisation du système de favoris...');
-
-            // Initialiser les systèmes
-            initializeStats();
-            initializeFavorites();
-            setupSearch();
-            setupFilters();
-            setupLogout();
-            setupPostulations();
-
-            // Initialiser les statistiques
-            function initializeStats() {
-                const totalBourses = {{ bourses|length }};
-                document.getElementById('statsBourses').textContent = totalBourses;
-
-                const candidatures = localStorage.getItem('user_candidatures') || '0';
-                const favoris = getFavoriteCount();
-                const alertes = localStorage.getItem('user_alertes') || '0';
-
-                document.getElementById('statsCandidatures').textContent = candidatures;
-                document.getElementById('statsFavoris').textContent = favoris;
-                document.getElementById('statsAlertes').textContent = alertes;
-            }
-
-            // Système de favoris CORRIGÉ
-            function initializeFavorites() {
-                console.log('Initialisation des favoris...');
-                const favorites = JSON.parse(localStorage.getItem('user_favorites') || '{}');
+        // Filtrage des opportunités
+        document.querySelectorAll('.filter-tag').forEach(tag => {
+            tag.addEventListener('click', function() {
+                const filter = this.getAttribute('data-filter');
                 
-                // Forcer l'affichage de tous les boutons cœur
-                document.querySelectorAll('.heart-btn').forEach(btn => {
-                    btn.style.display = 'flex';
-                    btn.style.visibility = 'visible';
-                    btn.style.opacity = '1';
-                    
-                    const bourseId = btn.getAttribute('data-bourse-id');
-                    const heartIcon = btn.querySelector('i');
-                    
-                    if (favorites[bourseId]) {
-                        heartIcon.className = 'fas fa-heart';
-                        btn.style.background = 'rgba(229, 62, 62, 0.1)';
+                // Mettre à jour les filtres actifs
+                document.querySelectorAll('.filter-tag').forEach(t => {
+                    t.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // Filtrer les cartes
+                const cards = document.querySelectorAll('.opportunity-card');
+                cards.forEach(card => {
+                    if (filter === 'all') {
+                        card.style.display = 'flex';
                     } else {
-                        heartIcon.className = 'far fa-heart';
-                        btn.style.background = 'rgba(255, 255, 255, 0.95)';
-                    }
-                });
-                
-                updateFavoriteCount();
-                sortBoursesByFavorites();
-                
-                // Événements des coeurs
-                document.querySelectorAll('.heart-btn').forEach(btn => {
-                    btn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        
-                        const bourseId = this.getAttribute('data-bourse-id');
-                        const heartIcon = this.querySelector('i');
-                        const bourseCard = this.closest('.bourse-card');
-                        const bourseTitle = bourseCard.querySelector('.bourse-title').textContent;
-                        
-                        console.log('Cœur cliqué pour la bourse:', bourseTitle);
-                        toggleFavorite(bourseId, heartIcon, this, bourseTitle);
-                    });
-                });
-            }
-
-            function toggleFavorite(bourseId, heartIcon, heartBtn, bourseTitle) {
-                const favorites = JSON.parse(localStorage.getItem('user_favorites') || '{}');
-                
-                if (favorites[bourseId]) {
-                    // Retirer des favoris
-                    delete favorites[bourseId];
-                    heartIcon.className = 'far fa-heart';
-                    heartBtn.style.background = 'rgba(255, 255, 255, 0.95)';
-                    heartBtn.classList.remove('liked');
-                    showNotification(`"${bourseTitle}" retiré des favoris`, 'info');
-                } else {
-                    // Ajouter aux favoris
-                    favorites[bourseId] = true;
-                    heartIcon.className = 'fas fa-heart';
-                    heartBtn.style.background = 'rgba(229, 62, 62, 0.1)';
-                    heartBtn.classList.add('liked');
-                    showNotification(`❤️ "${bourseTitle}" ajouté aux favoris !`, 'success');
-                }
-                
-                localStorage.setItem('user_favorites', JSON.stringify(favorites));
-                updateFavoriteCount();
-                sortBoursesByFavorites();
-            }
-
-            function getFavoriteCount() {
-                const favorites = JSON.parse(localStorage.getItem('user_favorites') || '{}');
-                return Object.keys(favorites).length;
-            }
-
-            function updateFavoriteCount() {
-                const favoriteCount = getFavoriteCount();
-                document.getElementById('statsFavoris').textContent = favoriteCount;
-            }
-
-            function sortBoursesByFavorites() {
-                const boursesGrid = document.getElementById('boursesGrid');
-                const bourseCards = Array.from(boursesGrid.querySelectorAll('.bourse-card'));
-                const favorites = JSON.parse(localStorage.getItem('user_favorites') || '{}');
-                
-                bourseCards.sort((a, b) => {
-                    const aId = a.getAttribute('data-bourse-id');
-                    const bId = b.getAttribute('data-bourse-id');
-                    const aIsFavorite = favorites[aId] ? 1 : 0;
-                    const bIsFavorite = favorites[bId] ? 1 : 0;
-                    return bIsFavorite - aIsFavorite;
-                });
-                
-                bourseCards.forEach(card => {
-                    boursesGrid.appendChild(card);
-                });
-            }
-
-            // Reste du code JavaScript inchangé...
-            function setupSearch() {
-                const searchInput = document.getElementById('searchInput');
-                const searchBtn = document.getElementById('searchBtn');
-                const searchResults = document.getElementById('searchResults');
-                const resultsContainer = document.getElementById('resultsContainer');
-                const resultsCount = document.getElementById('resultsCount');
-
-                function performSearch() {
-                    const searchTerm = searchInput.value.toLowerCase().trim();
-                    
-                    if (searchTerm === '') {
-                        searchResults.style.display = 'none';
-                        document.querySelectorAll('.bourse-card').forEach(card => {
-                            card.style.display = 'block';
-                        });
-                        return;
-                    }
-
-                    const bourseCards = document.querySelectorAll('.bourse-card');
-                    let matchCount = 0;
-                    const matchingCards = [];
-
-                    bourseCards.forEach(card => {
-                        const searchableText = card.getAttribute('data-searchable') || '';
-                        if (searchableText.includes(searchTerm)) {
-                            matchCount++;
-                            matchingCards.push(card.outerHTML);
-                            card.style.display = 'none';
+                        if (card.getAttribute('data-type') === filter) {
+                            card.style.display = 'flex';
                         } else {
                             card.style.display = 'none';
                         }
-                    });
-
-                    if (matchCount > 0) {
-                        resultsCount.textContent = matchCount;
-                        resultsContainer.innerHTML = matchingCards.join('');
-                        searchResults.style.display = 'block';
-                        reattachEvents();
-                    } else {
-                        resultsCount.textContent = '0';
-                        resultsContainer.innerHTML = '<p style="text-align: center; color: var(--text-color); padding: 40px;">Aucune bourse trouvée pour votre recherche.</p>';
-                        searchResults.style.display = 'block';
-                    }
-                }
-
-                searchInput.addEventListener('input', performSearch);
-                searchBtn.addEventListener('click', performSearch);
-                searchInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') performSearch();
-                });
-            }
-
-            function setupFilters() {
-                const filterAll = document.getElementById('filterAll');
-                const filterFavorites = document.getElementById('filterFavorites');
-
-                filterAll.addEventListener('click', function() {
-                    document.querySelectorAll('.bourse-card').forEach(card => {
-                        card.style.display = 'block';
-                    });
-                    filterAll.classList.add('active');
-                    filterFavorites.classList.remove('active');
-                });
-
-                filterFavorites.addEventListener('click', function() {
-                    const favorites = JSON.parse(localStorage.getItem('user_favorites') || '{}');
-                    let favoriteCount = 0;
-                    
-                    document.querySelectorAll('.bourse-card').forEach(card => {
-                        const bourseId = card.getAttribute('data-bourse-id');
-                        if (favorites[bourseId]) {
-                            card.style.display = 'block';
-                            favoriteCount++;
-                        } else {
-                            card.style.display = 'none';
-                        }
-                    });
-                    
-                    if (favoriteCount === 0) {
-                        const boursesGrid = document.getElementById('boursesGrid');
-                        const noFavoritesMsg = document.createElement('div');
-                        noFavoritesMsg.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-color);';
-                        noFavoritesMsg.innerHTML = `
-                            <i class="far fa-heart" style="font-size: 3rem; color: #ddd; margin-bottom: 15px;"></i>
-                            <h3 style="margin-bottom: 10px;">Aucune bourse en favoris</h3>
-                            <p>Cliquez sur le cœur ♥ des bourses pour les ajouter à vos favoris</p>
-                        `;
-                        boursesGrid.appendChild(noFavoritesMsg);
-                    }
-                    
-                    filterFavorites.classList.add('active');
-                    filterAll.classList.remove('active');
-                });
-            }
-
-            function setupLogout() {
-                document.getElementById('logoutBtn').addEventListener('click', async function(e) {
-                    e.preventDefault();
-                    try {
-                        const response = await fetch('/api/logout');
-                        const result = await response.json();
-                        if (result.success) window.location.href = '/';
-                    } catch (error) {
-                        console.error('Erreur de déconnexion:', error);
-                        window.location.href = '/';
                     }
                 });
-            }
-
-            function setupPostulations() {
-                document.querySelectorAll('.btn-postuler').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const bourseId = this.getAttribute('data-bourse-id');
-                        const bourseCard = this.closest('.bourse-card');
-                        const bourseTitle = bourseCard.querySelector('.bourse-title').textContent;
-                        
-                        const currentCandidatures = parseInt(localStorage.getItem('user_candidatures') || '0');
-                        localStorage.setItem('user_candidatures', (currentCandidatures + 1).toString());
-                        
-                        document.getElementById('statsCandidatures').textContent = currentCandidatures + 1;
-                        
-                        this.textContent = 'Postulé ✓';
-                        this.style.background = 'var(--light-green)';
-                        this.disabled = true;
-                        
-                        showNotification(`Postulation envoyée pour : ${bourseTitle}`, 'success');
-                    });
-                });
-            }
-
-            function reattachEvents() {
-                initializeFavorites();
-                setupPostulations();
-            }
-
-            function showNotification(message, type = 'info') {
-                const notification = document.createElement('div');
-                notification.style.cssText = `
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    padding: 15px 20px;
-                    background: ${type === 'success' ? 'var(--primary-green)' : 'var(--sky-blue)'};
-                    color: white;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                    z-index: 1000;
-                    animation: slideIn 0.3s ease;
-                `;
-                notification.textContent = message;
-                
-                document.body.appendChild(notification);
-                
-                setTimeout(() => {
-                    notification.style.animation = 'slideOut 0.3s ease';
-                    setTimeout(() => document.body.removeChild(notification), 300);
-                }, 3000);
-            }
+            });
         });
+        
+        // Recherche
+        document.getElementById('searchBtn').addEventListener('click', performSearch);
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') performSearch();
+        });
+        
+        function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const cards = document.querySelectorAll('.opportunity-card');
+            
+            cards.forEach(card => {
+                const title = card.querySelector('.opportunity-title').textContent.toLowerCase();
+                const desc = card.querySelector('.opportunity-desc').textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || desc.includes(searchTerm)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        
+        // Modal pour les détails
+        const modal = document.getElementById('detailsModal');
+        const closeBtn = modal.querySelector('.close');
+        
+        function showOpportunityDetails(id) {
+            // Pour l'instant, montrer un message simple
+            // Plus tard, vous pourriez faire une requête AJAX pour obtenir plus de détails
+            document.getElementById('modalContent').innerHTML = `
+                <h2>Détails de l'opportunité</h2>
+                <p>Cette fonctionnalité affichera tous les détails de l'opportunité ${id}.</p>
+                <p>Vous pouvez étendre cette fonction pour afficher:</p>
+                <ul>
+                    <li>Date limite d'inscription</li>
+                    <li>Conditions d'éligibilité</li>
+                    <li>Documents requis</li>
+                    <li>Procédure d'application</li>
+                    <li>Contact</li>
+                </ul>
+                <button class="btn-details" onclick="applyOpportunity(${id})" style="margin-top: 1rem;">
+                    <i class="fas fa-paper-plane"></i> Postuler maintenant
+                </button>
+            `;
+            modal.style.display = 'block';
+        }
+        
+        closeBtn.onclick = function() {
+            modal.style.display = 'none';
+        }
+        
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        function applyOpportunity(id) {
+            alert(`Postulation pour l'opportunité ${id} - Cette fonctionnalité sera implémentée prochainement.`);
+            modal.style.display = 'none';
+        }
+        
+        // Fermer les messages flash après 5 secondes
+        setTimeout(function() {
+            const flashes = document.querySelectorAll('.flash');
+            flashes.forEach(flash => {
+                flash.style.opacity = '0';
+                flash.style.transform = 'translateX(100%)';
+                setTimeout(() => flash.remove(), 300);
+            });
+        }, 5000);
     </script>
 </body>
 </html>
