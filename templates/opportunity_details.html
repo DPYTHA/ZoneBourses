@@ -2,11 +2,9 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ opportunity.title }} - ZoneBourse</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ opportunity.title|truncate(30) }} - ZoneBourse</title>
     <link rel="web icon" href="/static/images/logo1.png">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -16,192 +14,417 @@
             --success: #10B981;
             --warning: #F59E0B;
             --danger: #EF4444;
+            --gray-50: #F9FAFB;
             --gray-100: #F3F4F6;
             --gray-200: #E5E7EB;
             --gray-300: #D1D5DB;
             --gray-600: #4B5563;
             --gray-700: #374151;
             --gray-900: #111827;
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
-            --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
-            --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-lg: 0 4px 16px rgba(0,0,0,0.1);
         }
         
+        /* RESET ET OPTIMISATION MOBILE */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        html {
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
         }
         
         body {
-            font-family: 'Poppins', sans-serif;
-            background: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--gray-50);
             color: var(--gray-900);
-            line-height: 1.6;
+            line-height: 1.5;
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
         }
         
-        /* Header Mobile First */
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        input, textarea, select, button {
+            font-size: 16px; /* Empêche le zoom sur iOS */
+        }
+        
+        /* LAYOUT MOBILE FIRST */
         .mobile-header {
-            display: none;
             background: white;
-            padding: 1rem;
-            border-bottom: 1px solid var(--gray-200);
-            position: sticky;
+            padding: 0.75rem 1rem;
+            position: fixed;
             top: 0;
-            z-index: 100;
-        }
-        
-        .mobile-header-content {
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-sm);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            height: 60px;
         }
         
-        .mobile-logo {
+        .header-back-btn {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            text-decoration: none;
+            color: var(--gray-700);
+            font-weight: 500;
+            font-size: 0.9rem;
         }
         
-        .mobile-logo i {
-            font-size: 1.5rem;
-            color: var(--primary-blue);
+        .header-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
         }
         
-        .mobile-logo h1 {
-            font-size: 1.25rem;
-            font-weight: 700;
-        }
-        
-        .mobile-logo span {
-            color: var(--primary-blue);
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
         }
         
         .mobile-menu-btn {
             background: none;
             border: none;
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             color: var(--gray-700);
             cursor: pointer;
             padding: 0.5rem;
+            line-height: 1;
         }
         
-        .mobile-nav {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border-bottom: 1px solid var(--gray-200);
+        /* CONTENU PRINCIPAL */
+        .main-content {
+            margin-top: 60px; /* Compense le header fixe */
+            padding-bottom: 80px; /* Compense le FAB */
+        }
+        
+        .container {
             padding: 1rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        
-        .mobile-nav.active {
-            display: block;
-            animation: slideDown 0.3s ease;
-        }
-        
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* Desktop Header */
-        .opportunity-container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 1.5rem;
         }
         
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        /* CARTE D'OPPORTUNITÉ */
+        .opportunity-card {
+            background: white;
+            border-radius: var(--radius-lg);
             margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
         }
         
-        .logo {
+        .card-header {
+            padding: 1.5rem 1rem;
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+            color: white;
+            position: relative;
+        }
+        
+        .opportunity-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .opportunity-title {
+            font-size: 1.375rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            line-height: 1.3;
+        }
+        
+        .opportunity-subtitle {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+        
+        .card-body {
+            padding: 1.5rem 1rem;
+        }
+        
+        /* INFORMATIONS MÉTA */
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .meta-item {
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--gray-50);
+            border-radius: var(--radius-md);
         }
         
-        .logo i {
-            font-size: 1.75rem;
+        .meta-icon {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            background: white;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: var(--primary-blue);
+            font-size: 0.9rem;
         }
         
-        .logo h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
+        .meta-content h4 {
+            font-size: 0.7rem;
+            color: var(--gray-600);
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .meta-content p {
+            font-size: 0.85rem;
+            font-weight: 600;
             color: var(--gray-900);
         }
         
-        .logo span {
+        /* MONTANT */
+        .amount-display {
+            background: var(--light-blue);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .amount-label {
+            font-size: 0.8rem;
+            color: var(--gray-600);
+            margin-bottom: 0.5rem;
+        }
+        
+        .amount-value {
+            font-size: 1.5rem;
+            font-weight: 700;
             color: var(--primary-blue);
         }
         
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-            justify-content: flex-end;
+        /* SECTIONS DE CONTENU */
+        .content-section {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-md);
         }
         
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            background: var(--gray-100);
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+        
+        .section-icon {
+            color: var(--primary-blue);
+            font-size: 1.25rem;
+        }
+        
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+        
+        /* DESCRIPTION */
+        .description-content {
+            color: var(--gray-700);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        
+        .description-content p {
+            margin-bottom: 1rem;
+        }
+        
+        /* ÉTAPES */
+        .steps-list {
+            list-style: none;
+        }
+        
+        .step-item {
+            display: flex;
+            gap: 0.75rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .step-item:last-child {
+            border-bottom: none;
+        }
+        
+        .step-number {
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+            background: var(--primary-blue);
+            color: white;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--gray-700);
-            flex-shrink: 0;
-        }
-        
-        .user-details {
-            text-align: right;
-        }
-        
-        .user-details div:first-child {
+            font-size: 0.75rem;
             font-weight: 600;
+        }
+        
+        .step-content h4 {
             font-size: 0.95rem;
-        }
-        
-        .user-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-        
-        .btn {
-            padding: 0.625rem 1.25rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.875rem;
             font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: var(--gray-900);
+        }
+        
+        .step-content p {
+            font-size: 0.875rem;
+            color: var(--gray-700);
+            line-height: 1.5;
+        }
+        
+        /* DOCUMENTS */
+        .documents-list {
+            list-style: none;
+        }
+        
+        .document-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem;
+            margin-bottom: 0.5rem;
+            background: var(--gray-50);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--gray-200);
+        }
+        
+        .document-icon {
+            color: var(--primary-blue);
+            font-size: 1.125rem;
+        }
+        
+        .document-info {
+            flex: 1;
+        }
+        
+        .document-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--gray-900);
+            margin-bottom: 0.125rem;
+        }
+        
+        .document-type {
+            font-size: 0.75rem;
+            color: var(--gray-600);
+        }
+        
+        /* GALERIE */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .gallery-item {
+            aspect-ratio: 1/1;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: var(--gray-200);
+            position: relative;
+        }
+        
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* SIDEBAR MOBILE */
+        .mobile-sidebar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 1rem;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 900;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .mobile-sidebar.active {
+            transform: translateY(0);
+        }
+        
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 899;
+        }
+        
+        .sidebar-overlay.active {
+            display: block;
+        }
+        
+        /* BOUTONS */
+        .btn {
+            padding: 0.875rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
             cursor: pointer;
             transition: all 0.2s;
-            text-decoration: none;
-            display: inline-flex;
+            display: flex;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
-            border: none;
-            white-space: nowrap;
+            width: 100%;
+            text-decoration: none;
         }
         
         .btn-primary {
@@ -213,6 +436,11 @@
             background: var(--dark-blue);
         }
         
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
         .btn-secondary {
             background: var(--gray-100);
             color: var(--gray-700);
@@ -222,705 +450,119 @@
             background: var(--gray-200);
         }
         
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background: #059669;
-        }
-        
-        /* Breadcrumb */
-        .breadcrumb {
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            color: var(--gray-600);
-            font-size: 0.875rem;
-        }
-        
-        .breadcrumb a {
-            color: var(--primary-blue);
-            text-decoration: none;
-        }
-        
-        .breadcrumb a:hover {
-            text-decoration: underline;
-        }
-        
-        /* Opportunity Header */
-        .opportunity-header {
-            background: white;
-            border-radius: var(--radius-lg);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--gray-200);
-        }
-        
-        .opportunity-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: var(--light-blue);
-            color: var(--primary-blue);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-        
-        .opportunity-title {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-            color: var(--gray-900);
-            line-height: 1.3;
-        }
-        
-        .opportunity-subtitle {
-            font-size: 1.125rem;
-            color: var(--gray-700);
-            margin-bottom: 1.5rem;
-            line-height: 1.6;
-        }
-        
-        .opportunity-meta {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem;
-            background: var(--gray-100);
-            border-radius: var(--radius-md);
-        }
-        
-        .meta-icon {
-            width: 36px;
-            height: 36px;
-            background: white;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary-blue);
-            flex-shrink: 0;
-        }
-        
-        .meta-content h4 {
-            font-size: 0.75rem;
-            color: var(--gray-600);
-            margin-bottom: 0.25rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .meta-content p {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--gray-900);
-        }
-        
-        .amount-badge {
-            background: var(--primary-blue);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: var(--radius-md);
-            font-size: 1.25rem;
-            font-weight: 700;
-            display: inline-block;
-            margin-top: 0.5rem;
-        }
-        
-        /* Main Content Grid */
-        .content-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        @media (min-width: 1024px) {
-            .content-grid {
-                grid-template-columns: 2fr 1fr;
-            }
-        }
-        
-        /* Content Sections */
-        .content-section {
-            background: white;
-            border-radius: var(--radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--gray-200);
-        }
-        
-        .section-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1.25rem;
-            color: var(--gray-900);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        
-        .section-title i {
-            color: var(--primary-blue);
-        }
-        
-        .description-content {
-            line-height: 1.8;
-            color: var(--gray-700);
-        }
-        
-        .description-content p {
-            margin-bottom: 1.25rem;
-        }
-        
-        .description-content p:last-child {
-            margin-bottom: 0;
-        }
-        
-        /* Steps List */
-        .steps-list {
-            list-style: none;
-            padding: 0;
-        }
-        
-        .step-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            margin-bottom: 1.25rem;
-            padding-bottom: 1.25rem;
-            border-bottom: 1px solid var(--gray-200);
-        }
-        
-        .step-item:last-child {
-            margin-bottom: 0;
-            padding-bottom: 0;
-            border-bottom: none;
-        }
-        
-        .step-number {
-            background: var(--primary-blue);
-            color: white;
-            width: 28px;
-            height: 28px;
-            min-width: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 0.75rem;
-            flex-shrink: 0;
-        }
-        
-        .step-content h4 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: var(--gray-900);
-        }
-        
-        .step-content p {
-            color: var(--gray-700);
-            line-height: 1.6;
-            font-size: 0.95rem;
-        }
-        
-        /* Documents List */
-        .documents-list {
-            list-style: none;
-            padding: 0;
-        }
-        
-        .document-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            background: var(--light-blue);
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--gray-200);
-        }
-        
-        .document-item:last-child {
-            margin-bottom: 0;
-        }
-        
-        .document-icon {
-            color: var(--primary-blue);
-            font-size: 1.25rem;
-            flex-shrink: 0;
-        }
-        
-        /* Media Gallery */
-        .media-gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 0.75rem;
-            margin-top: 1rem;
-        }
-        
-        @media (min-width: 640px) {
-            .media-gallery {
-                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            }
-        }
-        
-        .gallery-item {
-            border-radius: var(--radius-sm);
-            overflow: hidden;
-            position: relative;
-            cursor: pointer;
-            aspect-ratio: 4/3;
-            background: var(--gray-100);
-        }
-        
-        .gallery-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-        
-        .gallery-item:hover img {
-            transform: scale(1.05);
-        }
-        
-        .gallery-overlay {
-            position: absolute;
-            top: 0;
+        /* ACTION BAR MOBILE */
+        .mobile-action-bar {
+            position: fixed;
+            bottom: 0;
             left: 0;
             right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: white;
+            padding: 0.75rem 1rem;
             display: flex;
+            gap: 0.75rem;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 800;
+        }
+        
+        .action-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            gap: 0.25rem;
+            padding: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--gray-700);
+            cursor: pointer;
+            border-radius: var(--radius-md);
         }
         
-        .gallery-item:hover .gallery-overlay {
-            opacity: 1;
+        .action-btn.active {
+            color: var(--primary-blue);
+            background: var(--light-blue);
         }
         
-        .gallery-overlay i {
-            color: white;
+        .action-btn i {
             font-size: 1.25rem;
         }
         
-        .video-container {
-            aspect-ratio: 16/9;
-            border-radius: var(--radius-sm);
-            overflow: hidden;
-            margin-top: 1rem;
-            background: var(--gray-200);
-        }
-        
-        .video-container iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        
-        /* Sidebar */
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-        }
-        
-        .sidebar-card {
-            background: white;
-            border-radius: var(--radius-lg);
-            padding: 1.25rem;
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--gray-200);
-        }
-        
-        .deadline-card {
-            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
-            color: white;
-        }
-        
-        .deadline-card .section-title {
-            color: white;
-        }
-        
-        .deadline-card i {
-            color: white;
-        }
-        
-        .deadline-countdown {
-            text-align: center;
-            margin: 1.25rem 0;
-        }
-        
-        .deadline-date {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-        }
-        
-        .deadline-month {
-            font-size: 1.125rem;
-            opacity: 0.9;
-        }
-        
-        .contact-info {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        .contact-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.75rem;
-            background: var(--light-blue);
-            border-radius: var(--radius-sm);
-        }
-        
-        .contact-icon {
-            color: var(--primary-blue);
-            font-size: 1.125rem;
-            flex-shrink: 0;
-        }
-        
-        .contact-content h4 {
-            font-size: 0.75rem;
-            color: var(--gray-600);
-            margin-bottom: 0.25rem;
-            text-transform: uppercase;
-        }
-        
-        .contact-content p {
+        .action-btn span {
+            font-size: 0.7rem;
             font-weight: 500;
-            color: var(--gray-900);
-            font-size: 0.95rem;
         }
         
-        .action-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-        
-        /* Related Opportunities */
-        .related-section {
-            margin-top: 2rem;
-        }
-        
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.25rem;
-        }
-        
-        .related-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-            gap: 1.25rem;
-            margin-top: 1.25rem;
-        }
-        
-        .related-card {
-            background: white;
-            border-radius: var(--radius-md);
-            padding: 1.25rem;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--gray-200);
-            transition: all 0.3s ease;
-            text-decoration: none;
-            color: inherit;
-            display: block;
-        }
-        
-        .related-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-md);
-            border-color: var(--primary-blue);
-        }
-        
-        .related-title {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.75rem;
-            color: var(--gray-900);
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        
-        .related-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 1rem;
-        }
-        
-        .related-type {
-            background: var(--light-blue);
-            color: var(--primary-blue);
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        
-        .related-amount {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--primary-blue);
-        }
-        
-        /* Modals */
+        /* MODALS MOBILE */
         .modal {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1100;
             padding: 1rem;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
             animation: fadeIn 0.3s ease;
         }
         
         .modal-content {
-            position: relative;
-            max-width: 95%;
-            max-height: 95%;
-            width: auto;
-            height: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .modal-image {
-            max-width: 100%;
-            max-height: 70vh;
-            object-fit: contain;
-            border-radius: var(--radius-sm);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            cursor: zoom-in;
-            transition: transform 0.3s ease;
-        }
-        
-        .modal-image.zoomed {
-            cursor: zoom-out;
-            transform: scale(1.5);
-        }
-        
-        .close-modal {
-            position: absolute;
-            top: -40px;
-            right: 0;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            background: none;
-            border: none;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s;
-        }
-        
-        .close-modal:hover {
-            transform: scale(1.1);
-        }
-        
-        .modal-controls {
-            position: absolute;
-            bottom: -50px;
-            display: flex;
-            gap: 0.75rem;
-            align-items: center;
-        }
-        
-        .modal-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.875rem;
-        }
-        
-        .modal-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.1);
-        }
-        
-        .image-counter {
-            color: white;
-            font-size: 0.875rem;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 0.5rem 0.75rem;
-            border-radius: 20px;
-        }
-        
-        /* Share Modal */
-        .share-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            padding: 1rem;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        .share-content {
             background: white;
             border-radius: var(--radius-lg);
             padding: 1.5rem;
-            max-width: 500px;
             width: 100%;
-            position: relative;
-            animation: slideUp 0.3s ease;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         
-        .share-content h3 {
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 1.25rem;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
             color: var(--gray-900);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 1.25rem;
         }
         
-        .share-input-group {
-            margin-bottom: 1.25rem;
-        }
-        
-        .share-input {
-            width: 100%;
-            padding: 0.875rem;
-            border: 2px solid var(--gray-200);
-            border-radius: var(--radius-sm);
-            font-size: 0.875rem;
-            background: var(--gray-100);
-            cursor: text;
-            user-select: all;
-        }
-        
-        .share-buttons {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .share-button {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.875rem;
-            background: var(--gray-100);
+        .close-modal {
+            background: none;
             border: none;
-            border-radius: var(--radius-sm);
+            font-size: 1.5rem;
+            color: var(--gray-600);
             cursor: pointer;
-            transition: all 0.2s;
+            line-height: 1;
         }
         
-        .share-button:hover {
-            background: var(--gray-200);
-            transform: translateY(-2px);
-        }
-        
-        .share-button i {
-            font-size: 1.25rem;
-        }
-        
-        .share-button.facebook i { color: #1877F2; }
-        .share-button.twitter i { color: #1DA1F2; }
-        .share-button.whatsapp i { color: #25D366; }
-        .share-button.telegram i { color: #0088cc; }
-        .share-button.email i { color: var(--primary-blue); }
-        .share-button.copy i { color: var(--success); }
-        
-        .share-button span {
-            font-size: 0.75rem;
-            font-weight: 500;
-            color: var(--gray-700);
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideUp {
-            from {
-                transform: translateY(20px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        
-        /* Flash Messages */
+        /* MESSAGES FLASH MOBILE */
         .flash-messages {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1500;
-            max-width: 90%;
-            width: 400px;
+            top: 70px;
+            left: 1rem;
+            right: 1rem;
+            z-index: 1000;
             pointer-events: none;
         }
         
         .flash {
-            padding: 1rem 1.25rem;
-            border-radius: var(--radius-sm);
-            margin-bottom: 10px;
-            animation: slideIn 0.3s ease;
+            padding: 0.875rem 1rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 0.5rem;
+            animation: slideDown 0.3s ease;
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            box-shadow: var(--shadow-lg);
             pointer-events: auto;
         }
         
@@ -936,240 +578,165 @@
             border-left: 4px solid var(--danger);
         }
         
-        @keyframes slideIn {
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideDown {
             from {
-                transform: translateX(100%);
+                transform: translateY(-20px);
                 opacity: 0;
             }
             to {
-                transform: translateX(0);
+                transform: translateY(0);
                 opacity: 1;
             }
         }
         
-        /* Floating Action Button Mobile */
-        .fab-container {
-            position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            z-index: 100;
-            display: none;
+        /* UTILITAIRES */
+        .empty-state {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--gray-600);
         }
         
-        .fab-main {
-            width: 56px;
-            height: 56px;
-            background: var(--primary-blue);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-            border: none;
-            transition: all 0.3s ease;
+        .empty-state i {
+            font-size: 2.5rem;
+            color: var(--gray-300);
+            margin-bottom: 1rem;
         }
         
-        .fab-main:hover {
-            background: var(--dark-blue);
-            transform: scale(1.1);
+        .divider {
+            height: 1px;
+            background: var(--gray-200);
+            margin: 1.5rem 0;
         }
         
-        .fab-menu {
-            position: absolute;
-            bottom: 70px;
-            right: 0;
-            display: none;
-            flex-direction: column;
-            gap: 0.75rem;
-            animation: slideUp 0.3s ease;
-        }
-        
-        .fab-menu.active {
-            display: flex;
-        }
-        
-        .fab-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            background: white;
-            padding: 0.75rem 1rem;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-md);
-            text-decoration: none;
-            color: var(--gray-900);
-            font-weight: 500;
-            white-space: nowrap;
-            transform: translateX(100%);
-            opacity: 0;
-            animation: slideLeft 0.3s ease forwards;
-        }
-        
-        .fab-item:nth-child(1) { animation-delay: 0.1s; }
-        .fab-item:nth-child(2) { animation-delay: 0.2s; }
-        .fab-item:nth-child(3) { animation-delay: 0.3s; }
-        
-        @keyframes slideLeft {
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .mobile-header {
-                display: block;
+        /* MEDIA QUERIES POUR TABLETTE ET DESKTOP */
+        @media (min-width: 768px) {
+            html {
+                font-size: 17px;
             }
             
-            .header {
+            .mobile-header {
+                padding: 1rem 2rem;
+                height: 70px;
+            }
+            
+            .main-content {
+                margin-top: 70px;
+                padding-bottom: 0;
+            }
+            
+            .container {
+                padding: 2rem;
+            }
+            
+            .opportunity-title {
+                font-size: 1.75rem;
+            }
+            
+            .meta-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .mobile-action-bar,
+            .mobile-sidebar {
                 display: none;
             }
             
-            .opportunity-container {
-                padding: 1rem;
+            .desktop-layout {
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                gap: 1.5rem;
+                align-items: start;
             }
             
-            .opportunity-header {
-                padding: 1.25rem;
-                margin-top: 0.5rem;
+            .sidebar-desktop {
+                position: sticky;
+                top: 90px;
+            }
+            
+            .sidebar-card {
+                background: white;
+                border-radius: var(--radius-lg);
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+                box-shadow: var(--shadow-md);
+            }
+            
+            .flash-messages {
+                top: 80px;
+                left: auto;
+                right: 2rem;
+                max-width: 400px;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .container {
+                padding: 2.5rem;
             }
             
             .opportunity-title {
-                font-size: 1.5rem;
+                font-size: 2rem;
             }
             
-            .opportunity-subtitle {
-                font-size: 1rem;
+            .meta-grid {
+                grid-template-columns: repeat(4, 1fr);
             }
             
-            .opportunity-meta {
-                grid-template-columns: 1fr;
-            }
-            
-            .meta-item {
-                padding: 0.625rem;
-            }
-            
-            .content-section {
-                padding: 1.25rem;
-            }
-            
-            .section-title {
-                font-size: 1.125rem;
-            }
-            
-            .media-gallery {
+            .gallery-grid {
                 grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            }
-            
-            .related-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .share-buttons {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .modal-controls {
-                bottom: -40px;
-            }
-            
-            .modal-btn {
-                width: 32px;
-                height: 32px;
-            }
-            
-            .fab-container {
-                display: block;
-            }
-            
-            .breadcrumb {
-                font-size: 0.8rem;
-            }
-            
-            .amount-badge {
-                font-size: 1.125rem;
-                padding: 0.875rem 1.25rem;
+                gap: 0.75rem;
             }
         }
         
-        @media (max-width: 480px) {
-            .opportunity-container {
-                padding: 0.75rem;
-            }
-            
-            .opportunity-header {
-                padding: 1rem;
-            }
-            
-            .opportunity-title {
-                font-size: 1.375rem;
-            }
-            
-            .content-section {
-                padding: 1rem;
-            }
-            
-            .modal-content {
-                max-width: 100%;
-            }
-            
-            .modal-image {
-                max-height: 60vh;
-            }
-            
-            .share-content {
-                padding: 1.25rem;
-            }
-            
-            .share-buttons {
-                grid-template-columns: 1fr;
-            }
-            
-            .fab-item {
-                font-size: 0.875rem;
-                padding: 0.625rem 0.875rem;
+        /* ANIMATIONS ET INTERACTIONS */
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        .action-btn:active {
+            background: var(--gray-100);
+        }
+        
+        /* PRÉVENTION DU ZOOM */
+        @media screen and (-webkit-min-device-pixel-ratio:0) { 
+            select,
+            textarea,
+            input {
+                font-size: 16px;
             }
         }
         
+        /* OPTIMISATION POUR TRÈS PETITS ÉCRANS */
         @media (max-width: 360px) {
-            .user-actions {
-                flex-direction: column;
-                width: 100%;
+            .meta-grid {
+                grid-template-columns: 1fr;
             }
             
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .action-buttons .btn {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .media-gallery {
+            .gallery-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .action-btn span {
+                font-size: 0.65rem;
             }
         }
         
-        /* Print Styles */
+        /* IMPRESSION */
         @media print {
-            .header, .mobile-header, .fab-container, .share-modal, .image-modal {
-                display: none !important;
+            .mobile-header,
+            .mobile-action-bar,
+            .mobile-sidebar {
+                display: none;
             }
             
-            .opportunity-container {
-                padding: 0;
-            }
-            
-            .content-section, .opportunity-header, .sidebar-card {
-                box-shadow: none;
-                border: 1px solid #ddd;
+            .main-content {
+                margin-top: 0;
+                padding-bottom: 0;
             }
             
             body {
@@ -1193,753 +760,522 @@
         {% endif %}
     {% endwith %}
     
-    <!-- Mobile Header -->
+    <!-- Header Mobile -->
     <div class="mobile-header">
-        <div class="mobile-header-content">
-            <div class="mobile-logo">
-                <i class="fas fa-graduation-cap"></i>
-                <h1>Zone<span>Bourse</span></h1>
-            </div>
-            <button class="mobile-menu-btn" id="mobileMenuBtn">
-                <i class="fas fa-bars"></i>
-            </button>
+        <a href="{{ url_for('dashboard') }}" class="header-back-btn">
+            <i class="fas fa-arrow-left"></i>
+            <span>Retour</span>
+        </a>
+        
+        <div class="header-title">
+            {{ opportunity.title|truncate(20) }}
         </div>
         
-        <div class="mobile-nav" id="mobileNav">
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: var(--gray-100); border-radius: var(--radius-sm);">
-                    <div class="user-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
+        <div class="header-actions">
+            <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Sidebar Mobile -->
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+    <div class="mobile-sidebar" id="mobileSidebar">
+        <div style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.125rem; margin-bottom: 1rem; color: var(--gray-900);">
+                <i class="fas fa-user-circle"></i> {{ user.prenom }} {{ user.nom }}
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                {% if session.get('is_admin') %}
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-cog"></i> Admin
+                </a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </a>
+            </div>
+        </div>
+        
+        {% if opportunity.contact_email or opportunity.contact_phone %}
+        <div style="margin-bottom: 1.5rem;">
+            <h4 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--gray-900);">
+                <i class="fas fa-address-card"></i> Contact
+            </h4>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                {% if opportunity.contact_email %}
+                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: var(--gray-50); border-radius: var(--radius-md);">
+                    <i class="fas fa-envelope" style="color: var(--primary-blue);"></i>
                     <div>
-                        <div style="font-weight: 600; font-size: 0.95rem;">{{ user.prenom }} {{ user.nom }}</div>
+                        <div style="font-size: 0.75rem; color: var(--gray-600);">Email</div>
+                        <div style="font-size: 0.85rem; font-weight: 500; word-break: break-word;">{{ opportunity.contact_email }}</div>
                     </div>
                 </div>
+                {% endif %}
                 
-                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary" style="width: 100%; justify-content: center;">
-                        <i class="fas fa-arrow-left"></i> Retour
-                    </a>
-                    {% if session.get('is_admin') %}
-                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary" style="width: 100%; justify-content: center;">
-                        <i class="fas fa-cog"></i> Admin
-                    </a>
-                    {% endif %}
-                    <a href="{{ url_for('logout') }}" class="btn btn-secondary" style="width: 100%; justify-content: center;">
-                        <i class="fas fa-sign-out-alt"></i> Déconnexion
-                    </a>
+                {% if opportunity.contact_phone %}
+                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: var(--gray-50); border-radius: var(--radius-md);">
+                    <i class="fas fa-phone" style="color: var(--primary-blue);"></i>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--gray-600);">Téléphone</div>
+                        <div style="font-size: 0.85rem; font-weight: 500;">{{ opportunity.contact_phone }}</div>
+                    </div>
                 </div>
+                {% endif %}
             </div>
         </div>
-    </div>
-    
-    <!-- Image Modal avec zoom -->
-    <div id="imageModal" class="modal">
-        <button class="close-modal" onclick="closeImageModal()">&times;</button>
-        <div class="modal-content">
-            <img id="modalImage" class="modal-image" src="" alt="" onclick="toggleZoom()">
-            <div class="modal-controls">
-                <button class="modal-btn" onclick="prevImage()" title="Précédent">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <span class="image-counter" id="imageCounter">1/1</span>
-                <button class="modal-btn" onclick="nextImage()" title="Suivant">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-                <button class="modal-btn" onclick="toggleZoom()" title="Zoom">
-                    <i class="fas fa-search-plus"></i>
-                </button>
-                <button class="modal-btn" onclick="downloadImage()" title="Télécharger">
-                    <i class="fas fa-download"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Share Modal -->
-    <div id="shareModal" class="share-modal">
-        <div class="share-content">
-            <h3><i class="fas fa-share-alt"></i> Partager cette opportunité</h3>
-            <div class="share-input-group">
-                <input type="text" id="shareUrl" class="share-input" readonly value="{{ request.url }}">
-            </div>
-            <div class="share-buttons">
-                <button class="share-button facebook" onclick="shareOnFacebook()">
-                    <i class="fab fa-facebook"></i>
-                    <span>Facebook</span>
-                </button>
-                <button class="share-button twitter" onclick="shareOnTwitter()">
-                    <i class="fab fa-twitter"></i>
-                    <span>Twitter</span>
-                </button>
-                <button class="share-button whatsapp" onclick="shareOnWhatsApp()">
-                    <i class="fab fa-whatsapp"></i>
-                    <span>WhatsApp</span>
-                </button>
-                <button class="share-button telegram" onclick="shareOnTelegram()">
-                    <i class="fab fa-telegram"></i>
-                    <span>Telegram</span>
-                </button>
-                <button class="share-button email" onclick="shareByEmail()">
-                    <i class="fas fa-envelope"></i>
-                    <span>Email</span>
-                </button>
-                <button class="share-button copy" onclick="copyShareLink()">
-                    <i class="fas fa-copy"></i>
-                    <span>Copier</span>
-                </button>
-            </div>
-            <button class="btn btn-secondary" onclick="closeShareModal()" style="width: 100%;">
-                <i class="fas fa-times"></i> Fermer
-            </button>
-        </div>
-    </div>
-    
-    <!-- Floating Action Button Mobile -->
-    <div class="fab-container">
-        <div class="fab-menu" id="fabMenu">
-            <button class="fab-item" onclick="shareOpportunity()">
-                <i class="fas fa-share-alt"></i> Partager
-            </button>
-            {% if opportunity.postulation_link %}
-            <a href="{{ opportunity.postulation_link }}" target="_blank" class="fab-item">
-                <i class="fas fa-paper-plane"></i> Postuler
-            </a>
-            {% endif %}
-            <button class="fab-item" onclick="saveOpportunity({{ opportunity.id }})">
-                <i class="fas fa-bookmark"></i> Sauvegarder
-            </button>
-        </div>
-        <button class="fab-main" id="fabMain">
-            <i class="fas fa-plus"></i>
+        {% endif %}
+        
+        <button class="btn btn-secondary" onclick="closeSidebar()">
+            <i class="fas fa-times"></i> Fermer
         </button>
     </div>
     
-    <div class="opportunity-container">
-        <!-- Desktop Header -->
-        <div class="header">
-            <div class="logo">
-                <i class="fas fa-graduation-cap"></i>
-                <h1>Zone<span>Bourse</span></h1>
-            </div>
-            
-            <div class="user-info">
-                <div class="user-avatar">
-                    <i class="fas fa-user"></i>
-                </div>
-                <div class="user-details">
-                    <div>{{ user.prenom }} {{ user.nom }}</div>
-                    <div class="user-actions">
-                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left"></i> Retour
-                        </a>
-                        {% if session.get('is_admin') %}
-                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary">
-                            <i class="fas fa-cog"></i> Admin
-                        </a>
-                        {% endif %}
-                        <a href="{{ url_for('logout') }}" class="btn btn-secondary">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Breadcrumb -->
-        <div class="breadcrumb">
-            <a href="{{ url_for('dashboard') }}">Tableau de bord</a>
-            <i class="fas fa-chevron-right"></i>
-            <span>{{ opportunity.title|truncate(40) }}</span>
-        </div>
-        
-        <!-- Opportunity Header -->
-        <div class="opportunity-header">
-            <div class="opportunity-badge">
-                <i class="fas fa-graduation-cap"></i>
-                {% if opportunity.type == 'bourse' %}
-                    Bourse d'études
-                {% elif opportunity.type == 'admission' %}
-                    Admission universitaire
-                {% elif opportunity.type == 'excellence' %}
-                    Programme d'excellence
-                {% else %}
-                    {{ opportunity.type|title }}
-                {% endif %}
-                {% if opportunity.is_featured %}
-                    <span style="margin-left: 0.5rem; background: var(--warning); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
-                        <i class="fas fa-star"></i> En vedette
-                    </span>
-                {% endif %}
-            </div>
-            
-            <h1 class="opportunity-title">{{ opportunity.title }}</h1>
-            
-            <p class="opportunity-subtitle">{{ opportunity.description }}</p>
-            
-            <div class="opportunity-meta">
-                <div class="meta-item">
-                    <div class="meta-icon">
-                        <i class="fas fa-map-marker-alt"></i>
-                    </div>
-                    <div class="meta-content">
-                        <h4>Localisation</h4>
-                        <p>{{ opportunity.pays }}</p>
-                    </div>
-                </div>
-                
-                <div class="meta-item">
-                    <div class="meta-icon">
-                        <i class="fas fa-calendar-alt"></i>
-                    </div>
-                    <div class="meta-content">
-                        <h4>Publiée le</h4>
-                        <p>{{ opportunity.created_at.strftime('%d/%m/%Y') }}</p>
-                    </div>
-                </div>
-                
-                {% if opportunity.deadline %}
-                <div class="meta-item">
-                    <div class="meta-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="meta-content">
-                        <h4>Date limite</h4>
-                        <p>{{ opportunity.deadline.strftime('%d/%m/%Y') }}</p>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-            
-            <div class="amount-badge">
-                {{ opportunity.montant }}
-            </div>
-        </div>
-        
-        <!-- Main Content -->
-        <div class="content-grid">
-            <!-- Left Column -->
-            <div class="main-content">
-                <!-- Description Section -->
-                <section class="content-section">
-                    <h2 class="section-title">
-                        <i class="fas fa-file-alt"></i>
-                        Description détaillée
-                    </h2>
-                    <div class="description-content">
-                        {{ opportunity.description|replace('\n', '<br>')|safe }}
-                    </div>
-                </section>
-                
-                <!-- Postulation Steps -->
-                <section class="content-section">
-                    <h2 class="section-title">
-                        <i class="fas fa-list-ol"></i>
-                        Processus de postulation
-                    </h2>
-                    
-                    {% if steps %}
-                    <ol class="steps-list">
-                        {% for step in steps %}
-                        <li class="step-item">
-                            <div class="step-number">{{ loop.index }}</div>
-                            <div class="step-content">
-                                <h4>Étape {{ loop.index }}</h4>
-                                <p>{{ step }}</p>
-                            </div>
-                        </li>
-                        {% endfor %}
-                    </ol>
-                    {% else %}
-                    <p style="color: var(--gray-600); font-style: italic;">
-                        Aucune information sur le processus de postulation n'est disponible pour le moment.
-                    </p>
-                    {% endif %}
-                </section>
-                
-                <!-- Required Documents -->
-                <section class="content-section">
-                    <h2 class="section-title">
-                        <i class="fas fa-file-upload"></i>
-                        Documents requis
-                    </h2>
-                    
-                    {% if documents %}
-                    <ul class="documents-list">
-                        {% for document in documents %}
-                        <li class="document-item">
-                            <div class="document-icon">
-                                <i class="fas fa-file-pdf"></i>
-                            </div>
-                            <div style="flex: 1;">
-                                <h4 style="margin: 0; color: var(--gray-900); font-size: 0.95rem;">{{ document }}</h4>
-                                <p style="margin: 0.25rem 0 0 0; color: var(--gray-600); font-size: 0.875rem;">
-                                    Format PDF recommandé
-                                </p>
-                            </div>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    <p style="color: var(--gray-600); font-style: italic;">
-                        Aucune liste de documents n'est disponible pour le moment.
-                    </p>
-                    {% endif %}
-                </section>
-                
-                <!-- Media Gallery -->
-                {% if images or opportunity.video_url %}
-                <section class="content-section">
-                    <h2 class="section-title">
-                        <i class="fas fa-images"></i>
-                        Galerie média
-                    </h2>
-                    
-                    <!-- Images -->
-                    {% if images %}
-                    <div class="media-gallery">
-                        {% for image_url in images %}
-                        {% if image_url.strip() %}
-                        <div class="gallery-item" onclick="openImageModal('{{ image_url.strip() }}', {{ loop.index0 }})">
-                            <img src="{{ image_url.strip() }}" alt="Image {{ loop.index }}" loading="lazy">
-                            <div class="gallery-overlay">
-                                <i class="fas fa-search-plus"></i>
-                            </div>
-                        </div>
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Video -->
-                    {% if opportunity.video_url %}
-                    <div class="video-container">
-                        {% if 'youtube.com' in opportunity.video_url or 'youtu.be' in opportunity.video_url %}
-                            {% set video_id = opportunity.video_url.split('v=')[1].split('&')[0] if 'v=' in opportunity.video_url else opportunity.video_url.split('/')[-1] %}
-                            <iframe src="https://www.youtube.com/embed/{{ video_id }}" 
-                                    frameborder="0" 
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                    allowfullscreen
-                                    loading="lazy">
-                            </iframe>
-                        {% elif 'vimeo.com' in opportunity.video_url %}
-                            {% set video_id = opportunity.video_url.split('vimeo.com/')[1] %}
-                            <iframe src="https://player.vimeo.com/video/{{ video_id }}" 
-                                    frameborder="0" 
-                                    allowfullscreen
-                                    loading="lazy">
-                            </iframe>
-                        {% else %}
-                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 2rem; color: var(--gray-700); text-align: center;">
-                                <i class="fas fa-video" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                                <p style="margin-bottom: 1rem;">Lien vidéo disponible</p>
-                                <a href="{{ opportunity.video_url }}" target="_blank" class="btn btn-primary">
-                                    <i class="fas fa-external-link-alt"></i> Ouvrir la vidéo
-                                </a>
-                            </div>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                </section>
-                {% endif %}
-            </div>
-            
-            <!-- Right Column - Sidebar -->
-            <div class="sidebar">
-                <!-- Deadline Card -->
-                {% if opportunity.deadline %}
-                <div class="sidebar-card deadline-card">
-                    <h3 class="section-title">
-                        <i class="fas fa-clock"></i>
-                        Date limite
-                    </h3>
-                    <div class="deadline-countdown">
-                        <div class="deadline-date">
-                            {{ opportunity.deadline.strftime('%d') }}
-                        </div>
-                        <div class="deadline-month">
-                            {{ opportunity.deadline.strftime('%B %Y') }}
-                        </div>
-                    </div>
-                    {% set days_left = (opportunity.deadline - now.date()).days if opportunity.deadline and now else 0 %}
-                    {% if days_left > 0 %}
-                    <p style="text-align: center; opacity: 0.9; margin-top: 0.5rem; font-size: 0.875rem;">
-                        <i class="fas fa-calendar-day"></i>
-                        {{ days_left }} jour{{ 's' if days_left > 1 else '' }} restant{{ 's' if days_left > 1 else '' }}
-                    </p>
-                    {% endif %}
-                </div>
-                {% endif %}
-                
-                <!-- Contact Information -->
-                {% if opportunity.contact_email or opportunity.contact_phone %}
-                <div class="sidebar-card">
-                    <h3 class="section-title">
-                        <i class="fas fa-address-card"></i>
-                        Contact
-                    </h3>
-                    <div class="contact-info">
-                        {% if opportunity.contact_email %}
-                        <div class="contact-item">
-                            <div class="contact-icon">
-                                <i class="fas fa-envelope"></i>
-                            </div>
-                            <div class="contact-content">
-                                <h4>Email</h4>
-                                <p style="word-break: break-word;">{{ opportunity.contact_email }}</p>
-                            </div>
-                        </div>
-                        {% endif %}
-                        
-                        {% if opportunity.contact_phone %}
-                        <div class="contact-item">
-                            <div class="contact-icon">
-                                <i class="fas fa-phone"></i>
-                            </div>
-                            <div class="contact-content">
-                                <h4>Téléphone</h4>
-                                <p>{{ opportunity.contact_phone }}</p>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
-                
-                <!-- Action Buttons -->
-                <div class="sidebar-card">
-                    <h3 class="section-title">
-                        <i class="fas fa-rocket"></i>
-                        Actions rapides
-                    </h3>
-                    <div class="action-buttons">
-                        {% if opportunity.postulation_link %}
-                        <a href="{{ opportunity.postulation_link }}" target="_blank" class="btn btn-success">
-                            <i class="fas fa-paper-plane"></i> Postuler maintenant
-                        </a>
-                        {% endif %}
-                        
-                        <button class="btn btn-primary" onclick="saveOpportunity({{ opportunity.id }})">
-                            <i class="fas fa-bookmark"></i> Sauvegarder
-                        </button>
-                        
-                        <button class="btn btn-secondary" onclick="shareOpportunity()">
-                            <i class="fas fa-share-alt"></i> Partager cette opportunité
-                        </button>
-                        
-                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left"></i> Retour aux opportunités
-                        </a>
-                    </div>
-                </div>
-                
-                <!-- Additional Info -->
-                <div class="sidebar-card">
-                    <h3 class="section-title">
-                        <i class="fas fa-info-circle"></i>
-                        Informations clés
-                    </h3>
-                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        <div>
-                            <h4 style="font-size: 0.75rem; color: var(--gray-600); margin-bottom: 0.25rem; text-transform: uppercase;">
-                                <i class="fas fa-globe"></i> Portée
-                            </h4>
-                            <p style="font-weight: 500; font-size: 0.95rem;">{{ opportunity.pays }}</p>
-                        </div>
-                        
-                        <div>
-                            <h4 style="font-size: 0.75rem; color: var(--gray-600); margin-bottom: 0.25rem; text-transform: uppercase;">
-                                <i class="fas fa-money-bill-wave"></i> Financement
-                            </h4>
-                            <p style="font-weight: 500; font-size: 0.95rem;">{{ opportunity.montant }}</p>
-                        </div>
-                        
-                        <div>
-                            <h4 style="font-size: 0.75rem; color: var(--gray-600); margin-bottom: 0.25rem; text-transform: uppercase;">
-                                <i class="fas fa-calendar-check"></i> Dernière mise à jour
-                            </h4>
-                            <p style="font-weight: 500; font-size: 0.95rem;">{{ opportunity.created_at.strftime('%d/%m/%Y') }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Related Opportunities -->
-        {% if related_opportunities %}
-        <section class="related-section">
-            <div class="section-header">
-                <h2 class="section-title" style="margin: 0;">
-                    <i class="fas fa-th-large"></i>
-                    Autres opportunités similaires
-                </h2>
-            </div>
-            
-            <div class="related-grid">
-                {% for related in related_opportunities %}
-                <a href="{{ url_for('opportunity_details', opportunity_id=related.id) }}" class="related-card">
-                    <h3 class="related-title">{{ related.title }}</h3>
-                    <p style="color: var(--gray-600); font-size: 0.875rem; margin: 0.5rem 0; min-height: 40px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                        {{ related.description[:100] }}{% if related.description|length > 100 %}...{% endif %}
-                    </p>
-                    <div class="related-meta">
-                        <span class="related-type">
-                            {% if related.type == 'bourse' %}
-                                Bourse
-                            {% elif related.type == 'admission' %}
-                                Admission
-                            {% elif related.type == 'excellence' %}
-                                Excellence
-                            {% else %}
-                                {{ related.type|title }}
-                            {% endif %}
-                        </span>
-                        <span class="related-amount">{{ related.montant }}</span>
-                    </div>
-                </a>
-                {% endfor %}
-            </div>
-        </section>
+    <!-- Action Bar Mobile -->
+    <div class="mobile-action-bar">
+        <button class="action-btn active" onclick="showSection('details')">
+            <i class="fas fa-info-circle"></i>
+            <span>Détails</span>
+        </button>
+        <button class="action-btn" onclick="showSection('documents')">
+            <i class="fas fa-file-alt"></i>
+            <span>Documents</span>
+        </button>
+        <button class="action-btn" onclick="shareOpportunity()">
+            <i class="fas fa-share-alt"></i>
+            <span>Partager</span>
+        </button>
+        {% if opportunity.postulation_link %}
+        <button class="action-btn" onclick="window.open('{{ opportunity.postulation_link }}', '_blank')">
+            <i class="fas fa-paper-plane"></i>
+            <span>Postuler</span>
+        </button>
         {% endif %}
     </div>
-
+    
+    <!-- Modal de Partage -->
+    <div class="modal" id="shareModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-share-alt"></i> Partager
+                </h3>
+                <button class="close-modal" onclick="closeModal('shareModal')">&times;</button>
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <div style="font-size: 0.9rem; color: var(--gray-600); margin-bottom: 0.5rem;">
+                    Partager cette opportunité :
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;">
+                    <button class="btn btn-secondary" onclick="shareOnWhatsApp()" style="padding: 0.75rem;">
+                        <i class="fab fa-whatsapp"></i>
+                    </button>
+                    <button class="btn btn-secondary" onclick="shareOnFacebook()" style="padding: 0.75rem;">
+                        <i class="fab fa-facebook"></i>
+                    </button>
+                    <button class="btn btn-secondary" onclick="copyShareLink()" style="padding: 0.75rem;">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button class="btn btn-secondary" onclick="shareByEmail()" style="padding: 0.75rem;">
+                        <i class="fas fa-envelope"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="closeModal('shareModal')">
+                Annuler
+            </button>
+        </div>
+    </div>
+    
+    <!-- Contenu Principal -->
+    <div class="main-content">
+        <div class="container">
+            <!-- Layout Desktop -->
+            <div class="desktop-layout">
+                <!-- Colonne Principale -->
+                <div>
+                    <!-- Carte d'opportunité -->
+                    <div class="opportunity-card">
+                        <div class="card-header">
+                            <div class="opportunity-badge">
+                                <i class="fas fa-graduation-cap"></i>
+                                {% if opportunity.type == 'bourse' %}
+                                    Bourse d'études
+                                {% elif opportunity.type == 'admission' %}
+                                    Admission
+                                {% elif opportunity.type == 'excellence' %}
+                                    Excellence
+                                {% else %}
+                                    {{ opportunity.type|title }}
+                                {% endif %}
+                                {% if opportunity.is_featured %}
+                                    <i class="fas fa-star" style="color: var(--warning); margin-left: 0.25rem;"></i>
+                                {% endif %}
+                            </div>
+                            
+                            <h1 class="opportunity-title">{{ opportunity.title }}</h1>
+                            <p class="opportunity-subtitle">{{ opportunity.description|truncate(150) }}</p>
+                        </div>
+                        
+                        <div class="card-body">
+                            <!-- Informations méta -->
+                            <div class="meta-grid">
+                                <div class="meta-item">
+                                    <div class="meta-icon">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </div>
+                                    <div class="meta-content">
+                                        <h4>Pays</h4>
+                                        <p>{{ opportunity.pays }}</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="meta-item">
+                                    <div class="meta-icon">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </div>
+                                    <div class="meta-content">
+                                        <h4>Publiée</h4>
+                                        <p>{{ opportunity.created_at.strftime('%d/%m/%Y') }}</p>
+                                    </div>
+                                </div>
+                                
+                                {% if opportunity.deadline %}
+                                <div class="meta-item">
+                                    <div class="meta-icon">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    <div class="meta-content">
+                                        <h4>Date limite</h4>
+                                        <p>{{ opportunity.deadline.strftime('%d/%m/%Y') }}</p>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="meta-item">
+                                    <div class="meta-icon">
+                                        <i class="fas fa-tag"></i>
+                                    </div>
+                                    <div class="meta-content">
+                                        <h4>Type</h4>
+                                        <p>{{ opportunity.type|title }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Montant -->
+                            <div class="amount-display">
+                                <div class="amount-label">Financement</div>
+                                <div class="amount-value">{{ opportunity.montant }}</div>
+                            </div>
+                            
+                            <!-- Description détaillée -->
+                            <div class="content-section" id="detailsSection">
+                                <div class="section-header">
+                                    <i class="fas fa-file-alt section-icon"></i>
+                                    <h2 class="section-title">Description détaillée</h2>
+                                </div>
+                                <div class="description-content">
+                                    {{ opportunity.description|replace('\n', '<br>')|safe }}
+                                </div>
+                            </div>
+                            
+                            <!-- Étapes de postulation -->
+                            {% if steps %}
+                            <div class="content-section">
+                                <div class="section-header">
+                                    <i class="fas fa-list-ol section-icon"></i>
+                                    <h2 class="section-title">Processus de postulation</h2>
+                                </div>
+                                <ol class="steps-list">
+                                    {% for step in steps %}
+                                    <li class="step-item">
+                                        <div class="step-number">{{ loop.index }}</div>
+                                        <div class="step-content">
+                                            <h4>Étape {{ loop.index }}</h4>
+                                            <p>{{ step }}</p>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                </ol>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Documents requis -->
+                            <div class="content-section" id="documentsSection" style="display: none;">
+                                <div class="section-header">
+                                    <i class="fas fa-file-upload section-icon"></i>
+                                    <h2 class="section-title">Documents requis</h2>
+                                </div>
+                                {% if documents %}
+                                <ul class="documents-list">
+                                    {% for document in documents %}
+                                    <li class="document-item">
+                                        <i class="fas fa-file-pdf document-icon"></i>
+                                        <div class="document-info">
+                                            <div class="document-name">{{ document }}</div>
+                                            <div class="document-type">Format PDF recommandé</div>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <div class="empty-state">
+                                    <i class="fas fa-file-alt"></i>
+                                    <p>Aucun document requis spécifié</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Galerie média -->
+                            {% if images or opportunity.video_url %}
+                            <div class="content-section">
+                                <div class="section-header">
+                                    <i class="fas fa-images section-icon"></i>
+                                    <h2 class="section-title">Galerie média</h2>
+                                </div>
+                                
+                                {% if images %}
+                                <div class="gallery-grid">
+                                    {% for image_url in images %}
+                                    {% if image_url.strip() %}
+                                    <div class="gallery-item" onclick="previewImage('{{ image_url.strip() }}')">
+                                        <img src="{{ image_url.strip() }}" alt="Image {{ loop.index }}" loading="lazy">
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                
+                                {% if opportunity.video_url %}
+                                <div style="margin-top: 1rem;">
+                                    <a href="{{ opportunity.video_url }}" target="_blank" class="btn btn-secondary">
+                                        <i class="fas fa-video"></i> Voir la vidéo
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sidebar Desktop -->
+                <div class="sidebar-desktop">
+                    <!-- Date limite -->
+                    {% if opportunity.deadline %}
+                    <div class="sidebar-card deadline-card" style="background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%); color: white;">
+                        <div class="section-header" style="margin-bottom: 1.5rem;">
+                            <i class="fas fa-clock section-icon" style="color: white;"></i>
+                            <h2 class="section-title" style="color: white;">Date limite</h2>
+                        </div>
+                        
+                        <div style="text-align: center;">
+                            <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.25rem;">
+                                {{ opportunity.deadline.strftime('%d') }}
+                            </div>
+                            <div style="font-size: 1.125rem; opacity: 0.9; margin-bottom: 1rem;">
+                                {{ opportunity.deadline.strftime('%B %Y') }}
+                            </div>
+                            
+                            {% set days_left = (opportunity.deadline - now.date()).days if opportunity.deadline and now else 0 %}
+                            {% if days_left > 0 %}
+                            <div style="font-size: 0.875rem; opacity: 0.9;">
+                                <i class="fas fa-calendar-day"></i>
+                                {{ days_left }} jour{{ 's' if days_left > 1 else '' }} restant{{ 's' if days_left > 1 else '' }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Actions rapides -->
+                    <div class="sidebar-card">
+                        <div class="section-header" style="margin-bottom: 1.5rem;">
+                            <i class="fas fa-rocket section-icon"></i>
+                            <h2 class="section-title">Actions rapides</h2>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            {% if opportunity.postulation_link %}
+                            <a href="{{ opportunity.postulation_link }}" target="_blank" class="btn btn-success">
+                                <i class="fas fa-paper-plane"></i> Postuler maintenant
+                            </a>
+                            {% endif %}
+                            
+                            <button class="btn btn-primary" onclick="saveOpportunity({{ opportunity.id }})">
+                                <i class="fas fa-bookmark"></i> Sauvegarder
+                            </button>
+                            
+                            <button class="btn btn-secondary" onclick="shareOpportunity()">
+                                <i class="fas fa-share-alt"></i> Partager
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script>
-        // Variables globales pour la galerie
+        // Variables globales
         let currentImages = [];
-        let currentImageIndex = 0;
-        let isZoomed = false;
-
-        // Initialiser les images
+        
+        // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
-            // Récupérer toutes les images de la galerie
+            // Récupérer les images
             const galleryItems = document.querySelectorAll('.gallery-item img');
             currentImages = Array.from(galleryItems).map(img => img.src);
             
-            // Menu mobile
-            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-            const mobileNav = document.getElementById('mobileNav');
-            
-            mobileMenuBtn.addEventListener('click', () => {
-                mobileNav.classList.toggle('active');
-                mobileMenuBtn.innerHTML = mobileNav.classList.contains('active') 
-                    ? '<i class="fas fa-times"></i>' 
-                    : '<i class="fas fa-bars"></i>';
+            // Prévenir le zoom sur les inputs
+            document.querySelectorAll('input, textarea, select').forEach(el => {
+                el.addEventListener('focus', function() {
+                    setTimeout(() => {
+                        this.blur();
+                    }, 100);
+                });
             });
             
-            // Fermer le menu mobile en cliquant à l'extérieur
-            document.addEventListener('click', (e) => {
-                if (!mobileNav.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
-                    mobileNav.classList.remove('active');
-                    mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
-                }
-            });
-            
-            // FAB (Floating Action Button)
-            const fabMain = document.getElementById('fabMain');
-            const fabMenu = document.getElementById('fabMenu');
-            
-            if (fabMain) {
-                fabMain.addEventListener('click', () => {
-                    fabMenu.classList.toggle('active');
-                    fabMain.innerHTML = fabMenu.classList.contains('active') 
-                        ? '<i class="fas fa-times"></i>' 
-                        : '<i class="fas fa-plus"></i>';
+            // Fermer les messages flash après 5 secondes
+            setTimeout(() => {
+                document.querySelectorAll('.flash').forEach(flash => {
+                    flash.style.opacity = '0';
+                    setTimeout(() => flash.remove(), 300);
                 });
-                
-                // Fermer le FAB en cliquant à l'extérieur
-                document.addEventListener('click', (e) => {
-                    if (!fabMain.contains(e.target) && !fabMenu.contains(e.target)) {
-                        fabMenu.classList.remove('active');
-                        fabMain.innerHTML = '<i class="fas fa-plus"></i>';
-                    }
-                });
-            }
+            }, 5000);
         });
-
-        // Ouvrir le modal d'image avec zoom
-        function openImageModal(imageUrl, index = 0) {
-            const modal = document.getElementById('imageModal');
-            const modalImage = document.getElementById('modalImage');
-            const imageCounter = document.getElementById('imageCounter');
+        
+        // Gestion de la sidebar mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('mobileSidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+            document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('mobileSidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        
+        // Gestion des sections mobiles
+        function showSection(sectionId) {
+            // Mettre à jour les boutons actifs
+            document.querySelectorAll('.action-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
             
-            currentImageIndex = index;
-            modalImage.src = imageUrl;
-            modalImage.classList.remove('zoomed');
-            isZoomed = false;
+            // Afficher la section correspondante
+            document.getElementById('detailsSection').style.display = 'none';
+            document.getElementById('documentsSection').style.display = 'none';
             
-            imageCounter.textContent = `${currentImageIndex + 1}/${currentImages.length}`;
-            modal.style.display = 'flex';
+            if (sectionId === 'details') {
+                document.getElementById('detailsSection').style.display = 'block';
+            } else if (sectionId === 'documents') {
+                document.getElementById('documentsSection').style.display = 'block';
+            }
             
-            // Empêcher le défilement de la page
+            // Scroll vers le haut de la section
+            window.scrollTo({
+                top: document.querySelector('.opportunity-card').offsetTop - 70,
+                behavior: 'smooth'
+            });
+        }
+        
+        // Gestion des modals
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
-
-        // Fermer le modal d'image
-        function closeImageModal() {
-            document.getElementById('imageModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
+        
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
         }
-
-        // Basculer le zoom
-        function toggleZoom() {
-            const modalImage = document.getElementById('modalImage');
-            modalImage.classList.toggle('zoomed');
-            isZoomed = !isZoomed;
-        }
-
-        // Image suivante
-        function nextImage() {
-            if (currentImages.length > 0) {
-                currentImageIndex = (currentImageIndex + 1) % currentImages.length;
-                const modalImage = document.getElementById('modalImage');
-                const imageCounter = document.getElementById('imageCounter');
-                
-                modalImage.src = currentImages[currentImageIndex];
-                modalImage.classList.remove('zoomed');
-                isZoomed = false;
-                imageCounter.textContent = `${currentImageIndex + 1}/${currentImages.length}`;
-            }
-        }
-
-        // Image précédente
-        function prevImage() {
-            if (currentImages.length > 0) {
-                currentImageIndex = (currentImageIndex - 1 + currentImages.length) % currentImages.length;
-                const modalImage = document.getElementById('modalImage');
-                const imageCounter = document.getElementById('imageCounter');
-                
-                modalImage.src = currentImages[currentImageIndex];
-                modalImage.classList.remove('zoomed');
-                isZoomed = false;
-                imageCounter.textContent = `${currentImageIndex + 1}/${currentImages.length}`;
-            }
-        }
-
-        // Télécharger l'image
-        function downloadImage() {
-            if (currentImages.length > 0) {
-                const link = document.createElement('a');
-                link.href = currentImages[currentImageIndex];
-                link.download = `opportunite-{{ opportunity.id }}-image-${currentImageIndex + 1}.jpg`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        }
-
-        // Fermer le modal en cliquant à l'extérieur
-        document.getElementById('imageModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeImageModal();
-            }
-        });
-
-        // Navigation au clavier
-        document.addEventListener('keydown', function(e) {
-            const imageModal = document.getElementById('imageModal');
-            const shareModal = document.getElementById('shareModal');
-            
-            if (imageModal.style.display === 'flex') {
-                switch(e.key) {
-                    case 'Escape':
-                        closeImageModal();
-                        break;
-                    case 'ArrowRight':
-                        nextImage();
-                        break;
-                    case 'ArrowLeft':
-                        prevImage();
-                        break;
-                    case 'z':
-                    case 'Z':
-                        toggleZoom();
-                        break;
-                }
-            } else if (shareModal.style.display === 'flex') {
-                if (e.key === 'Escape') {
-                    closeShareModal();
-                }
-            }
-        });
-
-        // Fonctionnalités de partage
+        
+        // Fonctions de partage
         function shareOpportunity() {
-            document.getElementById('shareModal').style.display = 'flex';
-            document.body.style.overflow = 'hidden';
+            if (window.innerWidth < 768) {
+                showModal('shareModal');
+            } else {
+                // Pour desktop, utiliser l'ancienne méthode
+                const url = encodeURIComponent(window.location.href);
+                const text = encodeURIComponent('Découvrez cette opportunité sur ZoneBourse: ' + document.querySelector('.opportunity-title').textContent);
+                window.open(`https://wa.me/?text=${text}%20${url}`, '_blank');
+            }
         }
-
-        function closeShareModal() {
-            document.getElementById('shareModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-
-        // Copier le lien dans le presse-papier
+        
         function copyShareLink() {
-            const shareUrl = document.getElementById('shareUrl');
-            shareUrl.select();
-            shareUrl.setSelectionRange(0, 99999); // Pour mobile
-            
-            navigator.clipboard.writeText(shareUrl.value)
+            const url = window.location.href;
+            navigator.clipboard.writeText(url)
                 .then(() => {
-                    showFlashMessage('Lien copié dans le presse-papier!', 'success');
+                    showFlashMessage('Lien copié !', 'success');
+                    closeModal('shareModal');
                 })
                 .catch(err => {
-                    // Fallback pour les anciens navigateurs
+                    // Fallback
+                    const tempInput = document.createElement('input');
+                    tempInput.value = url;
+                    document.body.appendChild(tempInput);
+                    tempInput.select();
                     document.execCommand('copy');
-                    showFlashMessage('Lien copié dans le presse-papier!', 'success');
+                    document.body.removeChild(tempInput);
+                    showFlashMessage('Lien copié !', 'success');
+                    closeModal('shareModal');
                 });
         }
-
-        // Partager sur Facebook
+        
+        function shareOnWhatsApp() {
+            const url = encodeURIComponent(window.location.href);
+            const text = encodeURIComponent('Découvrez cette opportunité sur ZoneBourse: ' + document.querySelector('.opportunity-title').textContent);
+            window.open(`https://wa.me/?text=${text}%20${url}`, '_blank');
+            closeModal('shareModal');
+        }
+        
         function shareOnFacebook() {
             const url = encodeURIComponent(window.location.href);
             window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+            closeModal('shareModal');
         }
-
-        // Partager sur Twitter
-        function shareOnTwitter() {
-            const url = encodeURIComponent(window.location.href);
-            const text = encodeURIComponent('Découvrez cette opportunité sur ZoneBourse!');
-            window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank');
-        }
-
-        // Partager sur WhatsApp
-        function shareOnWhatsApp() {
-            const url = encodeURIComponent(window.location.href);
-            const text = encodeURIComponent('Découvrez cette opportunité sur ZoneBourse!');
-            window.open(`https://wa.me/?text=${text}%20${url}`, '_blank');
-        }
-
-        // Partager sur Telegram
-        function shareOnTelegram() {
-            const url = encodeURIComponent(window.location.href);
-            const text = encodeURIComponent('Découvrez cette opportunité sur ZoneBourse!');
-            window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank');
-        }
-
-        // Partager par email
+        
         function shareByEmail() {
             const url = window.location.href;
             const subject = encodeURIComponent('Opportunité intéressante sur ZoneBourse');
-            const body = encodeURIComponent(`Bonjour,\n\nJe voulais partager cette opportunité intéressante avec vous:\n\n${url}\n\nCordialement`);
+            const body = encodeURIComponent(`Bonjour,\n\nJe voulais partager cette opportunité avec vous:\n\n"${document.querySelector('.opportunity-title').textContent}"\n\n${url}\n\nCordialement`);
             window.location.href = `mailto:?subject=${subject}&body=${body}`;
+            closeModal('shareModal');
         }
-
-        // Fermer le modal de partage en cliquant à l'extérieur
-        document.getElementById('shareModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeShareModal();
+        
+        // Prévisualisation d'image
+        function previewImage(imageUrl) {
+            // Pour mobile, ouvrir simplement l'image
+            if (window.innerWidth < 768) {
+                window.open(imageUrl, '_blank');
+            } else {
+                // Pour desktop, afficher un modal
+                alert('Ouverture de l\'image en grand format');
             }
-        });
-
+        }
+        
+        // Sauvegarder l'opportunité
+        function saveOpportunity(id) {
+            showFlashMessage('Opportunité ajoutée à vos favoris !', 'success');
+            // Implémentation AJAX ici si nécessaire
+        }
+        
         // Afficher un message flash
         function showFlashMessage(message, type = 'success') {
-            let flashMessages = document.querySelector('.flash-messages');
-            if (!flashMessages) {
-                flashMessages = document.createElement('div');
-                flashMessages.className = 'flash-messages';
-                document.body.appendChild(flashMessages);
-            }
+            const flashMessages = document.querySelector('.flash-messages');
+            if (!flashMessages) return;
             
             const flash = document.createElement('div');
             flash.className = `flash ${type}`;
@@ -1950,38 +1286,47 @@
             
             flashMessages.appendChild(flash);
             
-            // Supprimer après 5 secondes
             setTimeout(() => {
                 flash.style.opacity = '0';
-                flash.style.transform = 'translateX(100%)';
                 setTimeout(() => flash.remove(), 300);
-            }, 5000);
+            }, 3000);
         }
-
-        // Sauvegarder l'opportunité
-        function saveOpportunity(id) {
-            // Ici, vous pourriez faire un appel AJAX pour sauvegarder
-            showFlashMessage(`Opportunité sauvegardée dans vos favoris!`, 'success');
-            
-            // Exemple d'implémentation:
-            // fetch('/save-opportunity/' + id, { method: 'POST' })
-            //   .then(response => response.json())
-            //   .then(data => {
-            //       if (data.success) {
-            //           showFlashMessage('Opportunité sauvegardée!', 'success');
-            //       }
-            //   });
-        }
-
-        // Fermer les messages flash existants après 5 secondes
-        setTimeout(function() {
-            const flashes = document.querySelectorAll('.flash');
-            flashes.forEach(flash => {
-                flash.style.opacity = '0';
-                flash.style.transform = 'translateX(100%)';
-                setTimeout(() => flash.remove(), 300);
-            });
-        }, 5000);
+        
+        // Gestion du scroll pour cacher/afficher l'action bar
+        let lastScrollTop = 0;
+        const actionBar = document.querySelector('.mobile-action-bar');
+        
+        window.addEventListener('scroll', function() {
+            if (window.innerWidth < 768 && actionBar) {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                if (scrollTop > lastScrollTop && scrollTop > 100) {
+                    // Scroll vers le bas
+                    actionBar.style.transform = 'translateY(100%)';
+                } else {
+                    // Scroll vers le haut
+                    actionBar.style.transform = 'translateY(0)';
+                }
+                
+                lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+            }
+        });
+        
+        // Prévenir le zoom sur iOS
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
     </script>
 </body>
 </html>
