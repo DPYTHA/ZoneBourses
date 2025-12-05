@@ -8,15 +8,456 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #3B82F6;
+            --light-blue: #EFF6FF;
+            --dark-blue: #1E40AF;
+            --gray-100: #F3F4F6;
+            --gray-200: #E5E7EB;
+            --gray-600: #4B5563;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            --success-green: #10B981;
+            --error-red: #EF4444;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        
+        /* Container principal */
+        .container {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 0 0.5rem;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .logo i {
+            font-size: 2.25rem;
+            color: white;
+            background: rgba(255,255,255,0.1);
+            padding: 0.75rem;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .logo h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .logo span {
+            color: #FFD700;
+        }
+        
+        .header p {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.125rem;
+            font-weight: 400;
+        }
+        
+        /* Messages flash */
+        .flash-messages {
+            margin-bottom: 1.5rem;
+        }
+        
+        .flash {
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(10px);
+        }
+        
+        .flash.success {
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            border-left: 4px solid var(--success-green);
+        }
+        
+        .flash.error {
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border-left: 4px solid var(--error-red);
+        }
+        
+        .flash.info {
+            background: rgba(59, 130, 246, 0.9);
+            color: white;
+            border-left: 4px solid var(--primary-blue);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Formulaire */
+        .form-container {
+            background: white;
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .form-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3B82F6, #8B5CF6);
+        }
+        
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--gray-700);
+            font-size: 0.95rem;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .form-group input:invalid:not(:placeholder-shown) {
+            border-color: var(--error-red);
+        }
+        
+        .form-group input:valid:not(:placeholder-shown) {
+            border-color: var(--success-green);
+        }
+        
+        .password-strength {
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .strength-bar {
+            flex: 1;
+            height: 4px;
+            background: var(--gray-200);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .strength-fill {
+            height: 100%;
+            width: 0%;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+        
+        /* Bouton d'inscription */
+        .btn {
+            padding: 1rem;
+            border: none;
+            border-radius: var(--radius-md);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            width: 100%;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* Liens */
+        .form-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--gray-200);
+        }
+        
+        .form-footer p {
+            color: var(--gray-600);
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+        }
+        
+        .form-footer a {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .form-footer a:hover {
+            color: var(--dark-blue);
+            text-decoration: underline;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .container {
+                max-width: 100%;
+            }
+            
+            .form-container {
+                padding: 1.5rem;
+                box-shadow: var(--shadow-md);
+            }
+            
+            .logo {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .logo i {
+                font-size: 2rem;
+                padding: 0.625rem;
+            }
+            
+            .logo h1 {
+                font-size: 1.5rem;
+            }
+            
+            .header p {
+                font-size: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .form-container {
+                padding: 1.25rem;
+            }
+            
+            .form-group input {
+                padding: 0.75rem;
+                font-size: 0.95rem;
+            }
+            
+            .btn {
+                padding: 0.875rem;
+                font-size: 0.95rem;
+            }
+            
+            .flash {
+                padding: 0.875rem 1rem;
+                font-size: 0.95rem;
+            }
+        }
+        
+        @media (max-width: 360px) {
+            .logo h1 {
+                font-size: 1.375rem;
+            }
+            
+            .header p {
+                font-size: 0.95rem;
+            }
+            
+            .form-container {
+                padding: 1rem;
+            }
+            
+            .form-group {
+                margin-bottom: 1rem;
+            }
+        }
+        
+        /* Animation de chargement */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Validation en temps réel */
+        .validation-message {
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-height: 1.25rem;
+        }
+        
+        .validation-message.error {
+            color: var(--error-red);
+        }
+        
+        .validation-message.success {
+            color: var(--success-green);
+        }
+        
+        /* Option de visibilité du mot de passe */
+        .password-container {
+            position: relative;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--gray-600);
+            cursor: pointer;
+            padding: 0.25rem;
+            font-size: 1.25rem;
+        }
+        
+        .toggle-password:hover {
+            color: var(--primary-blue);
+        }
+        
+        /* Background animé */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, 
+                rgba(59, 130, 246, 0.1) 0%, 
+                rgba(139, 92, 246, 0.1) 100%);
+            z-index: -1;
+            animation: gradientShift 15s ease infinite;
+            background-size: 400% 400%;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+    </style>
 </head>
 <body>
-    <div class="container" style="max-width: 500px; margin: 50px auto;">
-        <div class="header" style="text-align: center; margin-bottom: 30px;">
+    <div class="container">
+        <div class="header">
             <div class="logo">
                 <i class="fas fa-graduation-cap"></i>
                 <h1>Zone<span>Bourse</span></h1>
             </div>
-            <p>Créez votre compte</p>
+            <p>Créez votre compte gratuitement</p>
         </div>
 
         <!-- Messages flash -->
@@ -33,52 +474,257 @@
             {% endif %}
         {% endwith %}
 
-        <div class="form-container" style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
-            <form method="POST" action="{{ url_for('register') }}">
+        <div class="form-container">
+            <form method="POST" action="{{ url_for('register') }}" id="registerForm">
                 <div class="form-group">
                     <label for="nom">Nom</label>
-                    <input type="text" id="nom" name="nom" required>
+                    <input type="text" id="nom" name="nom" required 
+                           placeholder="Entrez votre nom"
+                           pattern="[A-Za-zÀ-ÿ\s\-]{2,50}"
+                           title="Veuillez entrer un nom valide (2-50 caractères)">
+                    <div class="validation-message" id="nomValidation"></div>
                 </div>
                 
                 <div class="form-group">
                     <label for="prenom">Prénom</label>
-                    <input type="text" id="prenom" name="prenom" required>
+                    <input type="text" id="prenom" name="prenom" required 
+                           placeholder="Entrez votre prénom"
+                           pattern="[A-Za-zÀ-ÿ\s\-]{2,50}"
+                           title="Veuillez entrer un prénom valide (2-50 caractères)">
+                    <div class="validation-message" id="prenomValidation"></div>
                 </div>
                 
                 <div class="form-group">
                     <label for="numero">Numéro de téléphone</label>
-                    <input type="tel" id="numero" name="numero" required>
+                    <input type="tel" id="numero" name="numero" required 
+                           placeholder="Ex: +33 6 12 34 56 78"
+                           pattern="[\+\d\s\-\(\)]{10,20}"
+                           title="Veuillez entrer un numéro de téléphone valide">
+                    <div class="validation-message" id="numeroValidation"></div>
                 </div>
                 
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required>
+                    <input type="email" id="email" name="email" required 
+                           placeholder="exemple@email.com"
+                           pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                           title="Veuillez entrer une adresse email valide">
+                    <div class="validation-message" id="emailValidation"></div>
                 </div>
                 
                 <div class="form-group">
                     <label for="password">Mot de passe</label>
-                    <input type="password" id="password" name="password" required>
+                    <div class="password-container">
+                        <input type="password" id="password" name="password" required 
+                               placeholder="Minimum 8 caractères"
+                               pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$"
+                               title="Minimum 8 caractères avec au moins une lettre et un chiffre">
+                        <button type="button" class="toggle-password" id="togglePassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="validation-message" id="passwordValidation"></div>
+                    <div class="password-strength">
+                        <span>Force du mot de passe:</span>
+                        <div class="strength-bar">
+                            <div class="strength-fill" id="strengthFill"></div>
+                        </div>
+                    </div>
                 </div>
                 
-                <button type="submit" class="btn btn-primary" style="width: 100%;">
-                    <i class="fas fa-user-plus"></i> S'inscrire
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="fas fa-user-plus"></i> Créer mon compte
                 </button>
             </form>
             
-            <div style="text-align: center; margin-top: 20px;">
-                <p>Déjà un compte ? <a href="{{ url_for('login') }}">Connectez-vous</a></p>
-                <p><a href="{{ url_for('home') }}">← Retour à l'accueil</a></p>
+            <div class="form-footer">
+                <p>Déjà un compte ? <a href="{{ url_for('login') }}">
+                    <i class="fas fa-sign-in-alt"></i> Connectez-vous
+                </a></p>
+                <p><a href="{{ url_for('home') }}">
+                    <i class="fas fa-arrow-left"></i> Retour à l'accueil
+                </a></p>
             </div>
         </div>
     </div>
 
     <script>
+        // Validation en temps réel
+        const inputs = {
+            nom: document.getElementById('nom'),
+            prenom: document.getElementById('prenom'),
+            numero: document.getElementById('numero'),
+            email: document.getElementById('email'),
+            password: document.getElementById('password')
+        };
+        
+        const validations = {
+            nom: document.getElementById('nomValidation'),
+            prenom: document.getElementById('prenomValidation'),
+            numero: document.getElementById('numeroValidation'),
+            email: document.getElementById('emailValidation'),
+            password: document.getElementById('passwordValidation')
+        };
+        
+        const strengthFill = document.getElementById('strengthFill');
+        
+        // Validation du nom
+        inputs.nom.addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value.length < 2) {
+                showValidation('nom', 'Le nom doit contenir au moins 2 caractères', 'error');
+            } else if (!/^[A-Za-zÀ-ÿ\s\-]{2,50}$/.test(value)) {
+                showValidation('nom', 'Caractères spéciaux non autorisés', 'error');
+            } else {
+                showValidation('nom', '✓ Nom valide', 'success');
+            }
+        });
+        
+        // Validation du prénom
+        inputs.prenom.addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value.length < 2) {
+                showValidation('prenom', 'Le prénom doit contenir au moins 2 caractères', 'error');
+            } else if (!/^[A-Za-zÀ-ÿ\s\-]{2,50}$/.test(value)) {
+                showValidation('prenom', 'Caractères spéciaux non autorisés', 'error');
+            } else {
+                showValidation('prenom', '✓ Prénom valide', 'success');
+            }
+        });
+        
+        // Validation du numéro de téléphone
+        inputs.numero.addEventListener('input', function() {
+            const value = this.value.trim();
+            const phoneRegex = /^[\+\d\s\-\(\)]{10,20}$/;
+            const digitsOnly = value.replace(/\D/g, '');
+            
+            if (digitsOnly.length < 10) {
+                showValidation('numero', 'Le numéro doit contenir au moins 10 chiffres', 'error');
+            } else if (!phoneRegex.test(value)) {
+                showValidation('numero', 'Format de numéro invalide', 'error');
+            } else {
+                showValidation('numero', '✓ Numéro valide', 'success');
+            }
+        });
+        
+        // Validation de l'email
+        inputs.email.addEventListener('input', function() {
+            const value = this.value.trim();
+            const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
+            
+            if (!emailRegex.test(value)) {
+                showValidation('email', 'Format d\'email invalide', 'error');
+            } else {
+                showValidation('email', '✓ Email valide', 'success');
+            }
+        });
+        
+        // Validation du mot de passe
+        inputs.password.addEventListener('input', function() {
+            const value = this.value;
+            const hasLetter = /[A-Za-z]/.test(value);
+            const hasNumber = /\d/.test(value);
+            let strength = 0;
+            let message = '';
+            
+            if (value.length >= 8) strength++;
+            if (hasLetter) strength++;
+            if (hasNumber) strength++;
+            if (value.length >= 12) strength++;
+            if (/[@$!%*#?&]/.test(value)) strength++;
+            
+            // Mettre à jour la barre de force
+            const percentages = [0, 20, 40, 60, 80, 100];
+            strengthFill.style.width = percentages[strength] + '%';
+            strengthFill.style.backgroundColor = strength >= 4 ? '#10B981' : strength >= 3 ? '#3B82F6' : '#EF4444';
+            
+            // Message de validation
+            if (value.length === 0) {
+                message = '';
+            } else if (value.length < 8) {
+                message = 'Minimum 8 caractères requis';
+            } else if (!hasLetter || !hasNumber) {
+                message = 'Doit contenir des lettres et des chiffres';
+            } else {
+                message = strength >= 4 ? '✓ Mot de passe fort' : 'Mot de passe moyen';
+            }
+            
+            showValidation('password', message, strength >= 3 ? 'success' : 'error');
+        });
+        
+        function showValidation(field, message, type) {
+            const validationEl = validations[field];
+            if (!message) {
+                validationEl.innerHTML = '';
+                validationEl.className = 'validation-message';
+                return;
+            }
+            
+            validationEl.innerHTML = type === 'success' 
+                ? `<i class="fas fa-check-circle"></i> ${message}`
+                : `<i class="fas fa-exclamation-circle"></i> ${message}`;
+            validationEl.className = `validation-message ${type}`;
+        }
+        
+        // Basculer la visibilité du mot de passe
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = inputs.password;
+            const type = passwordInput.type === 'password' ? 'text' : 'password';
+            passwordInput.type = type;
+            this.innerHTML = type === 'password' 
+                ? '<i class="fas fa-eye"></i>' 
+                : '<i class="fas fa-eye-slash"></i>';
+        });
+        
+        // Gestion de la soumission du formulaire
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Valider tous les champs
+            Object.keys(inputs).forEach(key => {
+                if (!inputs[key].value.trim() || !inputs[key].checkValidity()) {
+                    isValid = false;
+                    inputs[key].focus();
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                alert('Veuillez corriger les erreurs dans le formulaire.');
+                return;
+            }
+            
+            // Désactiver le bouton et afficher l'animation de chargement
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div class="loading"></div> Création du compte...';
+            
+            // Si succès, la redirection se fera automatiquement
+        });
+        
+        // Fermer les messages flash après 5 secondes
+        setTimeout(function() {
+            document.querySelectorAll('.flash').forEach(flash => {
+                flash.style.opacity = '0';
+                flash.style.transform = 'translateX(-20px)';
+                setTimeout(() => flash.remove(), 300);
+            });
+        }, 5000);
+        
         // Redirection automatique après succès
         {% if request.args.get('success') %}
         setTimeout(function() {
             window.location.href = "{{ url_for('login') }}";
         }, 2000);
         {% endif %}
+        
+        // Focus sur le premier champ
+        window.addEventListener('DOMContentLoaded', () => {
+            inputs.nom.focus();
+        });
+        
+        // Empêcher le zoom sur mobile pour les inputs
+        document.addEventListener('touchstart', function() {}, {passive: true});
     </script>
 </body>
 </html>

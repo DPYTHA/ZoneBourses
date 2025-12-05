@@ -15,44 +15,124 @@
             --dark-blue: #1E40AF;
             --gray-100: #F3F4F6;
             --gray-200: #E5E7EB;
+            --gray-600: #4B5563;
             --gray-700: #374151;
             --gray-900: #111827;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
         }
         
-        .dashboard {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
             background: var(--light-blue);
             min-height: 100vh;
+            overflow-x: hidden;
         }
         
+        /* Messages flash */
+        .flash-messages {
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1rem;
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .flash {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .flash.success {
+            background: #10B981;
+            color: white;
+        }
+        
+        .flash.error {
+            background: #EF4444;
+            color: white;
+        }
+        
+        .flash.info {
+            background: var(--primary-blue);
+            color: white;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Header responsive */
         .dashboard-header {
             background: white;
-            padding: 2rem 2.5rem;
+            padding: 1.25rem 1rem;
             border-bottom: 1px solid var(--gray-200);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-700);
+            cursor: pointer;
+            padding: 0.5rem;
+            position: absolute;
+            right: 1rem;
+            top: 1.25rem;
         }
         
         .dashboard-nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+            max-width: 1400px;
+            margin: 0 auto;
         }
         
         .logo {
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            flex-shrink: 0;
         }
         
         .logo i {
-            font-size: 2rem;
+            font-size: 1.75rem;
             color: var(--primary-blue);
         }
         
         .logo h1 {
-            font-size: 1.75rem;
+            font-size: 1.5rem;
             font-weight: 700;
             color: var(--gray-900);
+            white-space: nowrap;
         }
         
         .logo span {
@@ -63,31 +143,43 @@
             display: flex;
             align-items: center;
             gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
         
         .user-avatar {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             background: var(--gray-100);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--gray-700);
+            flex-shrink: 0;
         }
         
-        .user-info h3 {
-            font-size: 1rem;
+        .user-details {
+            text-align: right;
+        }
+        
+        .user-details h3 {
+            font-size: 0.95rem;
             font-weight: 600;
             color: var(--gray-900);
             margin: 0;
+            line-height: 1.3;
         }
         
-        .btn-logout {
-            background: var(--gray-100);
-            color: var(--gray-700);
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
+        .user-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn-logout, .admin-link {
+            padding: 0.5rem 0.875rem;
+            border-radius: var(--radius-sm);
             text-decoration: none;
             font-size: 0.875rem;
             font-weight: 500;
@@ -95,6 +187,12 @@
             align-items: center;
             gap: 0.5rem;
             transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .btn-logout {
+            background: var(--gray-100);
+            color: var(--gray-700);
         }
         
         .btn-logout:hover {
@@ -104,35 +202,33 @@
         .admin-link {
             background: var(--primary-blue);
             color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-left: 1rem;
         }
         
+        .admin-link:hover {
+            background: var(--dark-blue);
+        }
+        
+        /* Hero section améliorée */
         .hero-section {
-            max-width: 800px;
-            margin: 0 auto 3rem;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
             text-align: center;
         }
         
         .hero-title {
-            font-size: 2.5rem;
+            font-size: 1.75rem;
             font-weight: 700;
             color: var(--gray-900);
-            margin-bottom: 1rem;
-            line-height: 1.2;
+            margin-bottom: 0.75rem;
+            line-height: 1.3;
         }
         
         .hero-subtitle {
-            font-size: 1.125rem;
+            font-size: 1rem;
             color: var(--gray-700);
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
         }
         
         .search-container {
@@ -143,27 +239,30 @@
         .search-bar {
             display: flex;
             background: white;
-            border-radius: 12px;
+            border-radius: var(--radius-md);
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             border: 1px solid var(--gray-200);
+            margin-bottom: 1rem;
         }
         
         .search-bar input {
             flex: 1;
-            padding: 1rem 1.5rem;
+            padding: 0.875rem 1.25rem;
             border: none;
-            font-size: 1rem;
+            font-size: 0.95rem;
             outline: none;
+            min-width: 0;
         }
         
         .search-bar button {
-            padding: 0 1.5rem;
+            padding: 0 1.25rem;
             background: var(--primary-blue);
             border: none;
             color: white;
             cursor: pointer;
             transition: background 0.2s;
+            flex-shrink: 0;
         }
         
         .search-bar button:hover {
@@ -173,20 +272,20 @@
         .filters {
             display: flex;
             justify-content: center;
-            gap: 1rem;
-            margin-top: 1rem;
+            gap: 0.5rem;
             flex-wrap: wrap;
         }
         
         .filter-tag {
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 0.875rem;
             background: white;
             border: 1px solid var(--gray-200);
             border-radius: 20px;
-            font-size: 0.875rem;
+            font-size: 0.85rem;
             color: var(--gray-700);
             cursor: pointer;
             transition: all 0.2s;
+            white-space: nowrap;
         }
         
         .filter-tag.active {
@@ -195,65 +294,64 @@
             border-color: var(--primary-blue);
         }
         
-        .filter-tag:hover {
+        .filter-tag:hover:not(.active) {
             background: var(--gray-100);
             border-color: var(--primary-blue);
             color: var(--primary-blue);
         }
         
-        .divider {
-            height: 1px;
-            background: var(--gray-200);
-            margin: 3rem auto;
-            max-width: 800px;
-        }
-        
+        /* Section des opportunités */
         .opportunities-section {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 0 2rem 4rem;
+            padding: 0 1rem 2rem;
         }
         
         .section-title {
-            font-size: 1.5rem;
+            font-size: 1.375rem;
             font-weight: 600;
             color: var(--gray-900);
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             text-align: center;
         }
         
         .opportunities-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+            gap: 1.25rem;
+            margin: 0 auto;
         }
         
         .opportunity-card {
             background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             border: 1px solid var(--gray-200);
             transition: all 0.3s ease;
             display: flex;
             flex-direction: column;
+            height: 100%;
+            min-height: 280px;
         }
         
         .opportunity-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
         }
         
         .opportunity-card.featured {
             background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
             color: white;
+            border: none;
         }
         
         .opportunity-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 1rem;
+            margin-bottom: 0.875rem;
+            gap: 0.5rem;
         }
         
         .opportunity-type {
@@ -265,6 +363,7 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            display: inline-block;
         }
         
         .featured .opportunity-type {
@@ -273,9 +372,10 @@
         }
         
         .opportunity-amount {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: 700;
             color: var(--gray-900);
+            white-space: nowrap;
         }
         
         .featured .opportunity-amount {
@@ -288,6 +388,10 @@
             color: var(--gray-900);
             margin-bottom: 0.5rem;
             line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         
         .featured .opportunity-title {
@@ -300,6 +404,10 @@
             line-height: 1.5;
             margin-bottom: 1rem;
             flex-grow: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         
         .featured .opportunity-desc {
@@ -313,6 +421,7 @@
             color: var(--gray-600);
             font-size: 0.875rem;
             margin-bottom: 1rem;
+            flex-wrap: wrap;
         }
         
         .featured .opportunity-meta {
@@ -325,7 +434,7 @@
             background: var(--primary-blue);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             font-weight: 500;
             cursor: pointer;
             transition: background 0.2s;
@@ -334,6 +443,8 @@
             justify-content: center;
             gap: 0.5rem;
             margin-top: auto;
+            text-decoration: none;
+            font-size: 0.875rem;
         }
         
         .featured .btn-details {
@@ -351,33 +462,174 @@
         
         .no-opportunities {
             text-align: center;
-            padding: 3rem;
+            padding: 3rem 1rem;
             color: var(--gray-600);
             grid-column: 1 / -1;
         }
         
+        .no-opportunities i {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--gray-400);
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1001;
+            padding: 1rem;
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .close {
+            position: absolute;
+            right: 1.25rem;
+            top: 1.25rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray-600);
+        }
+        
+        /* Responsive design amélioré */
         @media (max-width: 768px) {
-            .dashboard-header {
-                padding: 1.5rem;
+            .mobile-menu-btn {
+                display: block;
             }
             
             .dashboard-nav {
                 flex-direction: column;
+                align-items: stretch;
                 gap: 1rem;
-                align-items: flex-start;
+            }
+            
+            .logo {
+                justify-content: center;
             }
             
             .user-info {
-                width: 100%;
-                justify-content: space-between;
+                flex-direction: column;
+                align-items: stretch;
+                display: none;
+            }
+            
+            .user-info.active {
+                display: flex;
+                animation: slideDown 0.3s ease;
+            }
+            
+            @keyframes slideDown {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .user-details {
+                text-align: center;
+            }
+            
+            .user-actions {
+                justify-content: center;
             }
             
             .hero-title {
-                font-size: 2rem;
+                font-size: 1.5rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 0.95rem;
+            }
+            
+            .search-bar input {
+                padding: 0.75rem 1rem;
+                font-size: 0.9rem;
+            }
+            
+            .filter-tag {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.8rem;
+            }
+            
+            .opportunity-card {
+                padding: 1rem;
+                min-height: 260px;
+            }
+            
+            .opportunity-title {
+                font-size: 1rem;
+            }
+            
+            .opportunity-desc {
+                font-size: 0.85rem;
+                -webkit-line-clamp: 2;
+            }
+            
+            .modal-content {
+                margin: 1rem auto;
+                padding: 1.25rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .dashboard-header {
+                padding: 1rem 0.75rem;
+            }
+            
+            .logo h1 {
+                font-size: 1.25rem;
+            }
+            
+            .hero-title {
+                font-size: 1.375rem;
+            }
+            
+            .section-title {
+                font-size: 1.25rem;
             }
             
             .opportunities-grid {
                 grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .user-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .btn-logout, .admin-link {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        @media (min-width: 1400px) {
+            .dashboard-nav {
+                padding: 0 2rem;
+            }
+            
+            .opportunities-section {
+                padding: 0 2rem 3rem;
             }
         }
     </style>
@@ -398,21 +650,23 @@
     {% endwith %}
     
     <div class="dashboard-header">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">
+            <i class="fas fa-bars"></i>
+        </button>
+        
         <nav class="dashboard-nav">
             <div class="logo">
                 <i class="fas fa-graduation-cap"></i>
                 <h1>Zone<span>Bourse</span></h1>
             </div>
             
-            <div class="user-info">
-                <div>
-                    <div class="user-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
+            <div class="user-info" id="userInfo">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
                 </div>
-                <div>
+                <div class="user-details">
                     <h3>{{ user.prenom }} {{ user.nom }}</h3>
-                    <div style="display: flex; gap: 0.5rem;">
+                    <div class="user-actions">
                         <a href="{{ url_for('logout') }}" class="btn-logout">
                             <i class="fas fa-sign-out-alt"></i> Déconnexion
                         </a>
@@ -437,7 +691,7 @@
                 </div>
                 
                 <div class="filters">
-                    <span class="filter-tag active" data-filter="all">Toutes les catégories</span>
+                    <span class="filter-tag active" data-filter="all">Toutes</span>
                     <span class="filter-tag" data-filter="bourse">Bourses</span>
                     <span class="filter-tag" data-filter="admission">Admissions</span>
                     <span class="filter-tag" data-filter="excellence">Excellence</span>
@@ -445,8 +699,6 @@
             </div>
         </div>
     </div>
-
-    <div class="divider"></div>
 
     <main class="opportunities-section">
         <h2 class="section-title">Opportunités Récentes</h2>
@@ -477,13 +729,13 @@
                         <span>{{ opportunity.pays }}</span>
                     </div>
                     <a href="{{ url_for('opportunity_details', opportunity_id=opportunity.id) }}" class="btn-details">
-    <i class="fas fa-eye"></i> Voir les détails
-</a>
+                        <i class="fas fa-eye"></i> Voir les détails
+                    </a>
                 </div>
                 {% endfor %}
             {% else %}
                 <div class="no-opportunities">
-                    <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; color: var(--gray-400);"></i>
+                    <i class="fas fa-inbox"></i>
                     <h3>Aucune opportunité disponible</h3>
                     <p>Revenez plus tard pour découvrir de nouvelles opportunités.</p>
                 </div>
@@ -492,7 +744,7 @@
     </main>
 
     <!-- Modal pour les détails -->
-    <div id="detailsModal" class="modal" style="display: none;">
+    <div id="detailsModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
             <div id="modalContent"></div>
@@ -500,6 +752,25 @@
     </div>
 
     <script>
+        // Menu mobile
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const userInfo = document.getElementById('userInfo');
+        
+        mobileMenuBtn.addEventListener('click', () => {
+            userInfo.classList.toggle('active');
+            mobileMenuBtn.innerHTML = userInfo.classList.contains('active') 
+                ? '<i class="fas fa-times"></i>' 
+                : '<i class="fas fa-bars"></i>';
+        });
+        
+        // Fermer le menu mobile en cliquant à l'extérieur
+        document.addEventListener('click', (e) => {
+            if (!userInfo.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                userInfo.classList.remove('active');
+                mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            }
+        });
+        
         // Filtrage des opportunités
         document.querySelectorAll('.filter-tag').forEach(tag => {
             tag.addEventListener('click', function() {
@@ -517,31 +788,31 @@
                     if (filter === 'all') {
                         card.style.display = 'flex';
                     } else {
-                        if (card.getAttribute('data-type') === filter) {
-                            card.style.display = 'flex';
-                        } else {
-                            card.style.display = 'none';
-                        }
+                        card.style.display = card.getAttribute('data-type') === filter ? 'flex' : 'none';
                     }
                 });
             });
         });
         
         // Recherche
-        document.getElementById('searchBtn').addEventListener('click', performSearch);
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('searchInput');
+        
+        searchBtn.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') performSearch();
         });
         
         function performSearch() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const searchTerm = searchInput.value.toLowerCase().trim();
             const cards = document.querySelectorAll('.opportunity-card');
             
             cards.forEach(card => {
                 const title = card.querySelector('.opportunity-title').textContent.toLowerCase();
                 const desc = card.querySelector('.opportunity-desc').textContent.toLowerCase();
+                const type = card.querySelector('.opportunity-type').textContent.toLowerCase();
                 
-                if (title.includes(searchTerm) || desc.includes(searchTerm)) {
+                if (title.includes(searchTerm) || desc.includes(searchTerm) || type.includes(searchTerm)) {
                     card.style.display = 'flex';
                 } else {
                     card.style.display = 'none';
@@ -554,13 +825,13 @@
         const closeBtn = modal.querySelector('.close');
         
         function showOpportunityDetails(id) {
-            // Pour l'instant, montrer un message simple
-            // Plus tard, vous pourriez faire une requête AJAX pour obtenir plus de détails
             document.getElementById('modalContent').innerHTML = `
-                <h2>Détails de l'opportunité</h2>
-                <p>Cette fonctionnalité affichera tous les détails de l'opportunité ${id}.</p>
+                <h2 style="margin-bottom: 1rem; color: var(--gray-900);">Détails de l'opportunité</h2>
+                <div style="background: var(--gray-100); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+                    <p>Cette fonctionnalité affichera tous les détails de l'opportunité ${id}.</p>
+                </div>
                 <p>Vous pouvez étendre cette fonction pour afficher:</p>
-                <ul>
+                <ul style="margin: 1rem 0; padding-left: 1.5rem; color: var(--gray-700);">
                     <li>Date limite d'inscription</li>
                     <li>Conditions d'éligibilité</li>
                     <li>Documents requis</li>
@@ -574,15 +845,15 @@
             modal.style.display = 'block';
         }
         
-        closeBtn.onclick = function() {
+        closeBtn.onclick = () => {
             modal.style.display = 'none';
-        }
+        };
         
-        window.onclick = function(event) {
+        window.onclick = (event) => {
             if (event.target === modal) {
                 modal.style.display = 'none';
             }
-        }
+        };
         
         function applyOpportunity(id) {
             alert(`Postulation pour l'opportunité ${id} - Cette fonctionnalité sera implémentée prochainement.`);
@@ -590,14 +861,21 @@
         }
         
         // Fermer les messages flash après 5 secondes
-        setTimeout(function() {
-            const flashes = document.querySelectorAll('.flash');
-            flashes.forEach(flash => {
+        setTimeout(() => {
+            document.querySelectorAll('.flash').forEach(flash => {
                 flash.style.opacity = '0';
                 flash.style.transform = 'translateX(100%)';
                 setTimeout(() => flash.remove(), 300);
             });
         }, 5000);
+        
+        // Réinitialiser la recherche
+        function resetSearch() {
+            searchInput.value = '';
+            document.querySelectorAll('.opportunity-card').forEach(card => {
+                card.style.display = 'flex';
+            });
+        }
     </script>
 </body>
 </html>
