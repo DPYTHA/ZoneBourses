@@ -889,377 +889,313 @@
         </div>
     </div>
 
-    <script>
-        // Variables globales pour les étapes et documents
-        let stepCount = 1;
-        let documentCount = 1;
+   <!-- REMPLACEZ TOUT LE SCRIPT EXISTANT DANS admin_add_opportunity.html PAR CECI : -->
+
+<script>
+    // Variables pour la gestion des images
+    let selectedImages = [];
+    let uploadedImageUrls = [];
+    let uploadedPublicIds = [];
+
+    // Gestion du glisser-déposer
+    const imageUploadArea = document.getElementById('imageUploadArea');
+    const imageInput = document.getElementById('imageInput');
+
+    imageUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        imageUploadArea.style.borderColor = 'var(--primary-blue)';
+        imageUploadArea.style.background = 'rgba(59, 130, 246, 0.05)';
+    });
+
+    imageUploadArea.addEventListener('dragleave', () => {
+        imageUploadArea.style.borderColor = 'var(--gray-300)';
+        imageUploadArea.style.background = '';
+    });
+
+    imageUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        imageUploadArea.style.borderColor = 'var(--gray-300)';
+        imageUploadArea.style.background = '';
         
-        // Ajouter une étape de postulation
-        function addStep() {
-            stepCount++;
-            const container = document.getElementById('stepsContainer');
-            const newStep = document.createElement('div');
-            newStep.className = 'step-input-group';
-            newStep.innerHTML = `
-                <input type="text" name="steps[]" placeholder="Étape ${stepCount}: ..." required>
-                <button type="button" class="remove-btn" onclick="removeStep(this)">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            container.appendChild(newStep);
-            
-            // Afficher le bouton de suppression sur le premier élément
-            if (stepCount === 2) {
-                container.querySelector('.step-input-group:first-child .remove-btn').style.display = 'flex';
+        const files = e.dataTransfer.files;
+        handleImageFiles(files);
+    });
+
+    // Gérer la sélection de fichiers
+    function handleImageUpload(event) {
+        const files = event.target.files;
+        handleImageFiles(files);
+    }
+
+    function handleImageFiles(files) {
+        const maxImages = 10;
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        
+        for (let file of files) {
+            if (selectedImages.length >= maxImages) {
+                alert(`Maximum ${maxImages} images autorisées`);
+                break;
             }
+            
+            if (file.size > maxSize) {
+                alert(`L'image ${file.name} dépasse la taille maximale de 5MB`);
+                continue;
+            }
+            
+            if (!file.type.match('image.*')) {
+                alert(`Le fichier ${file.name} n'est pas une image valide`);
+                continue;
+            }
+            
+            selectedImages.push(file);
         }
         
-        // Supprimer une étape
-        function removeStep(button) {
-            const stepGroup = button.closest('.step-input-group');
-            stepGroup.remove();
-            stepCount--;
-            
-            // Renommer les étapes restantes
-            const steps = document.querySelectorAll('#stepsContainer .step-input-group');
-            steps.forEach((step, index) => {
-                const input = step.querySelector('input');
-                input.placeholder = `Étape ${index + 1}: ...`;
-            });
-            
-            // Cacher le bouton de suppression s'il ne reste qu'une étape
-            if (stepCount === 1) {
-                document.querySelector('#stepsContainer .remove-btn').style.display = 'none';
-            }
-        }
+        updateImagePreview();
+        updateUploadInfo();
+    }
+
+    // Mettre à jour la prévisualisation
+    function updateImagePreview() {
+        const previewContainer = document.getElementById('selectedImagesPreview');
+        previewContainer.innerHTML = '';
         
-        // Ajouter un document requis
-        function addDocument() {
-            documentCount++;
-            const container = document.getElementById('documentsContainer');
-            const newDoc = document.createElement('div');
-            newDoc.className = 'document-item';
-            newDoc.innerHTML = `
-                <input type="text" name="documents[]" placeholder="Ex: Lettre de motivation" required>
-                <button type="button" class="remove-btn" onclick="removeDocument(this)">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            container.appendChild(newDoc);
+        selectedImages.forEach((file, index) => {
+            const reader = new FileReader();
             
-            // Afficher le bouton de suppression sur le premier élément
-            if (documentCount === 2) {
-                container.querySelector('.document-item:first-child .remove-btn').style.display = 'flex';
-            }
-        }
-        
-        // Supprimer un document
-        function removeDocument(button) {
-            const docItem = button.closest('.document-item');
-            docItem.remove();
-            documentCount--;
-            
-            // Cacher le bouton de suppression s'il ne reste qu'un document
-            if (documentCount === 1) {
-                document.querySelector('#documentsContainer .remove-btn').style.display = 'none';
-            }
-        }
-        
-        // Mettre à jour la prévisualisation de la vidéo
-        function updateVideoPreview() {
-            const videoUrl = document.getElementById('video_url').value;
-            const preview = document.getElementById('videoPreview');
-            
-            if (!videoUrl) {
-                preview.style.display = 'none';
-                return;
-            }
-            
-            let embedUrl = '';
-            
-            // YouTube
-            if (videoUrl.includes('youtube.com/watch?v=')) {
-                const videoId = videoUrl.split('v=')[1];
-                const ampersandPosition = videoId.indexOf('&');
-                const finalVideoId = ampersandPosition !== -1 ? videoId.substring(0, ampersandPosition) : videoId;
-                embedUrl = `https://www.youtube.com/embed/${finalVideoId}`;
-            }
-            // YouTube short URL
-            else if (videoUrl.includes('youtu.be/')) {
-                const videoId = videoUrl.split('youtu.be/')[1];
-                embedUrl = `https://www.youtube.com/embed/${videoId}`;
-            }
-            // Vimeo
-            else if (videoUrl.includes('vimeo.com/')) {
-                const videoId = videoUrl.split('vimeo.com/')[1];
-                embedUrl = `https://player.vimeo.com/video/${videoId}`;
-            }
-            
-            if (embedUrl) {
+            reader.onload = function(e) {
+                const preview = document.createElement('div');
+                preview.className = 'image-preview';
                 preview.innerHTML = `
-                    <button type="button" class="clear-video" onclick="clearVideo()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                    <iframe src="${embedUrl}" 
-                            frameborder="0" 
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                            allowfullscreen>
-                    </iframe>
-                `;
-                preview.style.display = 'block';
-            } else {
-                preview.innerHTML = `
-                    <div style="text-align: center;">
-                        <i class="fas fa-video" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
-                        <p>Lien vidéo valide détecté</p>
-                        <button type="button" class="add-btn" onclick="clearVideo()" style="margin-top: 1rem;">
-                            <i class="fas fa-times"></i> Effacer
+                    <img src="${e.target.result}" alt="Prévisualisation">
+                    <div class="preview-overlay">
+                        <button type="button" class="remove-btn" onclick="removeImage(${index})">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </div>
+                    <div style="position: absolute; bottom: 5px; left: 5px; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">
+                        ${formatFileSize(file.size)}
+                    </div>
                 `;
-                preview.style.display = 'flex';
-                preview.style.flexDirection = 'column';
-                preview.style.alignItems = 'center';
-                preview.style.justifyContent = 'center';
-            }
-        }
-        
-        // Effacer la vidéo
-        function clearVideo() {
-            document.getElementById('video_url').value = '';
-            document.getElementById('videoPreview').style.display = 'none';
-        }
-        
-        // Aperçu en temps réel du titre
-        const titleInput = document.getElementById('title');
-        const preview = document.createElement('div');
-        preview.style.marginTop = '0.5rem';
-        preview.style.fontSize = '0.875rem';
-        preview.style.color = 'var(--gray-600)';
-        preview.innerHTML = '<strong>Aperçu :</strong> <span id="titlePreview"></span>';
-        titleInput.parentNode.appendChild(preview);
-        
-        titleInput.addEventListener('input', function() {
-            document.getElementById('titlePreview').textContent = this.value || '(vide)';
+                previewContainer.appendChild(preview);
+            };
+            
+            reader.readAsDataURL(file);
         });
+    }
+
+    // Supprimer une image
+    function removeImage(index) {
+        selectedImages.splice(index, 1);
+        updateImagePreview();
+        updateUploadInfo();
+    }
+
+    // Formater la taille du fichier
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // Mettre à jour les informations d'upload
+    function updateUploadInfo() {
+        const uploadCount = document.getElementById('uploadCount');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const uploadProgress = document.getElementById('uploadProgress');
         
-        // Initialiser l'aperçu
-        document.getElementById('titlePreview').textContent = titleInput.value || '(vide)';
+        if (selectedImages.length > 0) {
+            uploadProgress.style.display = 'block';
+            uploadCount.textContent = `${selectedImages.length} image(s) sélectionnée(s)`;
+            uploadStatus.textContent = 'Prêt à uploader après soumission';
+        } else {
+            uploadProgress.style.display = 'none';
+        }
+    }
+
+    // Gérer la soumission du formulaire - CORRECTION ICI
+    document.getElementById('opportunityForm').addEventListener('submit', async function(e) {
+        // NE PAS empêcher la soumission normale
+        // Le formulaire sera soumis normalement et Flask traitera les fichiers
+        updateUploadInfo();
         
-        // Fermer les messages flash après 5 secondes
-        setTimeout(function() {
-            const flashes = document.querySelectorAll('.flash');
-            flashes.forEach(flash => {
-                flash.style.opacity = '0';
-                setTimeout(() => flash.remove(), 300);
-            });
-        }, 5000);
-        
-        // Initialiser les compteurs
-        document.addEventListener('DOMContentLoaded', function() {
-            const initialSteps = document.querySelectorAll('#stepsContainer .step-input-group').length;
-            const initialDocs = document.querySelectorAll('#documentsContainer .document-item').length;
-            stepCount = initialSteps;
-            documentCount = initialDocs;
-        });
-    </script>
+        // Les images seront envoyées avec le formulaire via l'attribut enctype="multipart/form-data"
+        // Flask les récupérera avec request.files.getlist('images[]')
+    });
+
+    // Variables globales pour les étapes et documents
+    let stepCount = 1;
+    let documentCount = 1;
     
-    <script>
-        // Variables pour la gestion des images - OPTION 3
-        let selectedImages = [];
-        let uploadedImageUrls = [];
-        let uploadedPublicIds = [];
-
-        // Gestion du glisser-déposer
-        const imageUploadArea = document.getElementById('imageUploadArea');
-        const imageInput = document.getElementById('imageInput');
-
-        imageUploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            imageUploadArea.style.borderColor = 'var(--primary-blue)';
-            imageUploadArea.style.background = 'rgba(59, 130, 246, 0.05)';
+    // Ajouter une étape de postulation
+    function addStep() {
+        stepCount++;
+        const container = document.getElementById('stepsContainer');
+        const newStep = document.createElement('div');
+        newStep.className = 'step-input-group';
+        newStep.innerHTML = `
+            <input type="text" name="steps[]" placeholder="Étape ${stepCount}: ..." required>
+            <button type="button" class="remove-btn" onclick="removeStep(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        container.appendChild(newStep);
+        
+        // Afficher le bouton de suppression sur le premier élément
+        if (stepCount === 2) {
+            container.querySelector('.step-input-group:first-child .remove-btn').style.display = 'flex';
+        }
+    }
+    
+    // Supprimer une étape
+    function removeStep(button) {
+        const stepGroup = button.closest('.step-input-group');
+        stepGroup.remove();
+        stepCount--;
+        
+        // Renommer les étapes restantes
+        const steps = document.querySelectorAll('#stepsContainer .step-input-group');
+        steps.forEach((step, index) => {
+            const input = step.querySelector('input');
+            input.placeholder = `Étape ${index + 1}: ...`;
         });
-
-        imageUploadArea.addEventListener('dragleave', () => {
-            imageUploadArea.style.borderColor = 'var(--gray-300)';
-            imageUploadArea.style.background = '';
+        
+        // Cacher le bouton de suppression s'il ne reste qu'une étape
+        if (stepCount === 1) {
+            document.querySelector('#stepsContainer .remove-btn').style.display = 'none';
+        }
+    }
+    
+    // Ajouter un document requis
+    function addDocument() {
+        documentCount++;
+        const container = document.getElementById('documentsContainer');
+        const newDoc = document.createElement('div');
+        newDoc.className = 'document-item';
+        newDoc.innerHTML = `
+            <input type="text" name="documents[]" placeholder="Ex: Lettre de motivation" required>
+            <button type="button" class="remove-btn" onclick="removeDocument(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        container.appendChild(newDoc);
+        
+        // Afficher le bouton de suppression sur le premier élément
+        if (documentCount === 2) {
+            container.querySelector('.document-item:first-child .remove-btn').style.display = 'flex';
+        }
+    }
+    
+    // Supprimer un document
+    function removeDocument(button) {
+        const docItem = button.closest('.document-item');
+        docItem.remove();
+        documentCount--;
+        
+        // Cacher le bouton de suppression s'il ne reste qu'un document
+        if (documentCount === 1) {
+            document.querySelector('#documentsContainer .remove-btn').style.display = 'none';
+        }
+    }
+    
+    // Mettre à jour la prévisualisation de la vidéo
+    function updateVideoPreview() {
+        const videoUrl = document.getElementById('video_url').value;
+        const preview = document.getElementById('videoPreview');
+        
+        if (!videoUrl) {
+            preview.style.display = 'none';
+            return;
+        }
+        
+        let embedUrl = '';
+        
+        // YouTube
+        if (videoUrl.includes('youtube.com/watch?v=')) {
+            const videoId = videoUrl.split('v=')[1];
+            const ampersandPosition = videoId.indexOf('&');
+            const finalVideoId = ampersandPosition !== -1 ? videoId.substring(0, ampersandPosition) : videoId;
+            embedUrl = `https://www.youtube.com/embed/${finalVideoId}`;
+        }
+        // YouTube short URL
+        else if (videoUrl.includes('youtu.be/')) {
+            const videoId = videoUrl.split('youtu.be/')[1];
+            embedUrl = `https://www.youtube.com/embed/${videoId}`;
+        }
+        // Vimeo
+        else if (videoUrl.includes('vimeo.com/')) {
+            const videoId = videoUrl.split('vimeo.com/')[1];
+            embedUrl = `https://player.vimeo.com/video/${videoId}`;
+        }
+        
+        if (embedUrl) {
+            preview.innerHTML = `
+                <button type="button" class="clear-video" onclick="clearVideo()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <iframe src="${embedUrl}" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                </iframe>
+            `;
+            preview.style.display = 'block';
+        } else {
+            preview.innerHTML = `
+                <div style="text-align: center;">
+                    <i class="fas fa-video" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                    <p>Lien vidéo valide détecté</p>
+                    <button type="button" class="add-btn" onclick="clearVideo()" style="margin-top: 1rem;">
+                        <i class="fas fa-times"></i> Effacer
+                    </button>
+                </div>
+            `;
+            preview.style.display = 'flex';
+            preview.style.flexDirection = 'column';
+            preview.style.alignItems = 'center';
+            preview.style.justifyContent = 'center';
+        }
+    }
+    
+    // Effacer la vidéo
+    function clearVideo() {
+        document.getElementById('video_url').value = '';
+        document.getElementById('videoPreview').style.display = 'none';
+    }
+    
+    // Aperçu en temps réel du titre
+    const titleInput = document.getElementById('title');
+    const preview = document.createElement('div');
+    preview.style.marginTop = '0.5rem';
+    preview.style.fontSize = '0.875rem';
+    preview.style.color = 'var(--gray-600)';
+    preview.innerHTML = '<strong>Aperçu :</strong> <span id="titlePreview"></span>';
+    titleInput.parentNode.appendChild(preview);
+    
+    titleInput.addEventListener('input', function() {
+        document.getElementById('titlePreview').textContent = this.value || '(vide)';
+    });
+    
+    // Initialiser l'aperçu
+    document.getElementById('titlePreview').textContent = titleInput.value || '(vide)';
+    
+    // Fermer les messages flash après 5 secondes
+    setTimeout(function() {
+        const flashes = document.querySelectorAll('.flash');
+        flashes.forEach(flash => {
+            flash.style.opacity = '0';
+            setTimeout(() => flash.remove(), 300);
         });
-
-        imageUploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            imageUploadArea.style.borderColor = 'var(--gray-300)';
-            imageUploadArea.style.background = '';
-            
-            const files = e.dataTransfer.files;
-            handleImageFiles(files);
-        });
-
-        // Gérer la sélection de fichiers
-        function handleImageUpload(event) {
-            const files = event.target.files;
-            handleImageFiles(files);
-        }
-
-        function handleImageFiles(files) {
-            const maxImages = 10;
-            const maxSize = 5 * 1024 * 1024; // 5MB
-            
-            for (let file of files) {
-                // Vérifier le nombre d'images
-                if (selectedImages.length >= maxImages) {
-                    alert(`Maximum ${maxImages} images autorisées`);
-                    break;
-                }
-                
-                // Vérifier la taille
-                if (file.size > maxSize) {
-                    alert(`L'image ${file.name} dépasse la taille maximale de 5MB`);
-                    continue;
-                }
-                
-                // Vérifier le type
-                if (!file.type.match('image.*')) {
-                    alert(`Le fichier ${file.name} n'est pas une image valide`);
-                    continue;
-                }
-                
-                selectedImages.push(file);
-            }
-            
-            updateImagePreview();
-            updateUploadInfo();
-        }
-
-        // Mettre à jour la prévisualisation
-        function updateImagePreview() {
-            const previewContainer = document.getElementById('selectedImagesPreview');
-            previewContainer.innerHTML = '';
-            
-            selectedImages.forEach((file, index) => {
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    const preview = document.createElement('div');
-                    preview.className = 'image-preview';
-                    preview.innerHTML = `
-                        <img src="${e.target.result}" alt="Prévisualisation">
-                        <div class="preview-overlay">
-                            <button type="button" class="remove-btn" onclick="removeImage(${index})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                        <div style="position: absolute; bottom: 5px; left: 5px; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">
-                            ${formatFileSize(file.size)}
-                        </div>
-                    `;
-                    previewContainer.appendChild(preview);
-                };
-                
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // Supprimer une image
-        function removeImage(index) {
-            selectedImages.splice(index, 1);
-            updateImagePreview();
-            updateUploadInfo();
-        }
-
-        // Formater la taille du fichier
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-        }
-
-        // Mettre à jour les informations d'upload
-        function updateUploadInfo() {
-            const uploadCount = document.getElementById('uploadCount');
-            const uploadStatus = document.getElementById('uploadStatus');
-            const uploadProgress = document.getElementById('uploadProgress');
-            
-            if (selectedImages.length > 0) {
-                uploadProgress.style.display = 'block';
-                uploadCount.textContent = `${selectedImages.length} image(s) sélectionnée(s)`;
-                uploadStatus.textContent = 'Prêt à uploader après soumission';
-            } else {
-                uploadProgress.style.display = 'none';
-            }
-        }
-
-        // Gérer la soumission du formulaire - OPTION 3 AVEC TIMESTAMP
-        document.getElementById('opportunityForm').addEventListener('submit', async function(e) {
-            // Empêcher la soumission normale si on a des images à uploader
-            if (selectedImages.length > 0) {
-                e.preventDefault();
-                
-                const uploadProgressBar = document.getElementById('uploadProgressBar');
-                const uploadStatus = document.getElementById('uploadStatus');
-                
-                // Afficher le statut d'upload
-                uploadStatus.textContent = 'Upload en cours...';
-                uploadProgressBar.value = 0;
-                
-                try {
-                    // Uploader chaque image
-                    for (let i = 0; i < selectedImages.length; i++) {
-                        const file = selectedImages[i];
-                        
-                        // Créer un FormData pour l'image avec timestamp
-                        const formData = new FormData();
-                        formData.append('image', file);
-                        
-                        // AJOUT DU TIMESTAMP (Option 3)
-                        const timestamp = Math.floor(Date.now() / 1000);
-                        formData.append('timestamp', timestamp);
-                        
-                        // Envoyer à votre endpoint d'upload
-                        const response = await fetch('/admin/upload-image', {
-                            method: 'POST',
-                            body: formData
-                        });
-                        
-                        const result = await response.json();
-                        
-                        if (result.success) {
-                            uploadedImageUrls.push(result.url);
-                            uploadedPublicIds.push(result.public_id);
-                            uploadProgressBar.value = ((i + 1) / selectedImages.length) * 100;
-                        } else {
-                            throw new Error(`Erreur avec l'image ${file.name}: ${result.error}`);
-                        }
-                    }
-                    
-                    // Ajouter les URLs aux champs cachés
-                    const imageUrlsField = document.createElement('input');
-                    imageUrlsField.type = 'hidden';
-                    imageUrlsField.name = 'uploaded_image_urls';
-                    imageUrlsField.value = uploadedImageUrls.join('|||');
-                    this.appendChild(imageUrlsField);
-                    
-                    // Ajouter les public_ids aux champs cachés
-                    const publicIdsField = document.createElement('input');
-                    publicIdsField.type = 'hidden';
-                    publicIdsField.name = 'uploaded_public_ids';
-                    publicIdsField.value = uploadedPublicIds.join('|||');
-                    this.appendChild(publicIdsField);
-                    
-                    // Soumettre le formulaire
-                    uploadStatus.textContent = 'Upload terminé, enregistrement...';
-                    setTimeout(() => {
-                        this.submit();
-                    }, 1000);
-                    
-                } catch (error) {
-                    uploadStatus.textContent = 'Erreur lors de l\'upload';
-                    console.error('Upload error:', error);
-                    alert(`Erreur d'upload: ${error.message}\n\nVous pouvez essayer de soumettre à nouveau le formulaire.`);
-                }
-            }
-        });
-    </script>
+    }, 5000);
+    
+    // Initialiser les compteurs
+    document.addEventListener('DOMContentLoaded', function() {
+        const initialSteps = document.querySelectorAll('#stepsContainer .step-input-group').length;
+        const initialDocs = document.querySelectorAll('#documentsContainer .document-item').length;
+        stepCount = initialSteps;
+        documentCount = initialDocs;
+    });
+</script>
 </body>
 </html>
