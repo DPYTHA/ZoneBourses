@@ -34,6 +34,7 @@
             background: var(--light-blue);
             min-height: 100vh;
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
         
         /* Messages flash */
@@ -45,6 +46,7 @@
             padding: 1rem;
             max-width: 400px;
             width: 100%;
+            pointer-events: none;
         }
         
         .flash {
@@ -56,6 +58,7 @@
             gap: 0.75rem;
             animation: slideIn 0.3s ease;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            pointer-events: auto;
         }
         
         .flash.success {
@@ -87,7 +90,7 @@
         /* Header responsive */
         .dashboard-header {
             background: white;
-            padding: 1.25rem 1rem;
+            padding: 1rem;
             border-bottom: 1px solid var(--gray-200);
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             position: relative;
@@ -101,9 +104,8 @@
             color: var(--gray-700);
             cursor: pointer;
             padding: 0.5rem;
-            position: absolute;
-            right: 1rem;
-            top: 1.25rem;
+            z-index: 1002;
+            position: relative;
         }
         
         .dashboard-nav {
@@ -114,6 +116,7 @@
             gap: 1rem;
             max-width: 1400px;
             margin: 0 auto;
+            position: relative;
         }
         
         .logo {
@@ -121,6 +124,7 @@
             align-items: center;
             gap: 0.75rem;
             flex-shrink: 0;
+            z-index: 1002;
         }
         
         .logo i {
@@ -145,6 +149,7 @@
             gap: 1rem;
             flex-wrap: wrap;
             justify-content: flex-end;
+            transition: all 0.3s ease;
         }
         
         .user-avatar {
@@ -188,6 +193,7 @@
             gap: 0.5rem;
             transition: all 0.2s;
             white-space: nowrap;
+            border: 1px solid transparent;
         }
         
         .btn-logout {
@@ -197,21 +203,46 @@
         
         .btn-logout:hover {
             background: var(--gray-200);
+            border-color: var(--gray-300);
         }
         
         .admin-link {
             background: var(--primary-blue);
             color: white;
+            border-color: var(--primary-blue);
         }
         
         .admin-link:hover {
             background: var(--dark-blue);
+            border-color: var(--dark-blue);
+        }
+        
+        /* Overlay pour mobile */
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        
+        .mobile-overlay.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
         
         /* Hero section améliorée */
         .hero-section {
             max-width: 1200px;
-            margin: 2rem auto;
+            margin: 1.5rem auto;
             padding: 0 1rem;
             text-align: center;
         }
@@ -244,6 +275,12 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             border: 1px solid var(--gray-200);
             margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .search-bar:focus-within {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
         
         .search-bar input {
@@ -253,6 +290,7 @@
             font-size: 0.95rem;
             outline: none;
             min-width: 0;
+            background: transparent;
         }
         
         .search-bar button {
@@ -286,6 +324,7 @@
             cursor: pointer;
             transition: all 0.2s;
             white-space: nowrap;
+            user-select: none;
         }
         
         .filter-tag.active {
@@ -333,17 +372,39 @@
             flex-direction: column;
             height: 100%;
             min-height: 280px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .opportunity-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gray-200);
+            transition: background 0.3s ease;
+        }
+        
+        .opportunity-card:hover::before {
+            background: var(--primary-blue);
         }
         
         .opportunity-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border-color: var(--primary-blue);
         }
         
         .opportunity-card.featured {
             background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
             color: white;
             border: none;
+        }
+        
+        .opportunity-card.featured::before {
+            background: rgba(255, 255, 255, 0.3);
         }
         
         .opportunity-header {
@@ -437,7 +498,7 @@
             border-radius: var(--radius-sm);
             font-weight: 500;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -445,19 +506,26 @@
             margin-top: auto;
             text-decoration: none;
             font-size: 0.875rem;
+            border: 1px solid transparent;
+        }
+        
+        .btn-details:hover {
+            background: var(--dark-blue);
+            transform: translateY(-1px);
+        }
+        
+        .btn-details:active {
+            transform: translateY(0);
         }
         
         .featured .btn-details {
             background: rgba(255,255,255,0.2);
             color: white;
+            border-color: rgba(255,255,255,0.3);
         }
         
         .featured .btn-details:hover {
             background: rgba(255,255,255,0.3);
-        }
-        
-        .btn-details:hover {
-            background: var(--dark-blue);
         }
         
         .no-opportunities {
@@ -473,87 +541,89 @@
             color: var(--gray-400);
         }
         
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1001;
-            padding: 1rem;
-        }
-        
-        .modal-content {
-            background: white;
-            margin: 2rem auto;
-            padding: 1.5rem;
-            border-radius: var(--radius-md);
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-        }
-        
-        .close {
-            position: absolute;
-            right: 1.25rem;
-            top: 1.25rem;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--gray-600);
-        }
-        
         /* Responsive design amélioré */
         @media (max-width: 768px) {
             .mobile-menu-btn {
                 display: block;
+                position: absolute;
+                right: 1rem;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            
+            .dashboard-header {
+                padding: 1rem;
+                position: relative;
             }
             
             .dashboard-nav {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 1rem;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                padding-right: 3rem; /* Espace pour le bouton menu */
             }
             
             .logo {
-                justify-content: center;
+                justify-content: flex-start;
             }
             
             .user-info {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 80%;
+                max-width: 300px;
+                height: 100vh;
+                background: white;
                 flex-direction: column;
                 align-items: stretch;
-                display: none;
+                padding: 5rem 1.5rem 2rem;
+                box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+                z-index: 1001;
+                overflow-y: auto;
+                transition: right 0.3s ease;
             }
             
             .user-info.active {
-                display: flex;
-                animation: slideDown 0.3s ease;
+                right: 0;
             }
             
-            @keyframes slideDown {
-                from {
-                    opacity: 0;
-                    transform: translateY(-10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
+            .user-avatar {
+                width: 48px;
+                height: 48px;
+                font-size: 1.25rem;
             }
             
             .user-details {
-                text-align: center;
+                text-align: left;
+                margin-bottom: 1.5rem;
+            }
+            
+            .user-details h3 {
+                font-size: 1.1rem;
+                margin-bottom: 0.5rem;
             }
             
             .user-actions {
+                flex-direction: column;
+                width: 100%;
+                gap: 0.75rem;
+            }
+            
+            .btn-logout, .admin-link {
+                width: 100%;
                 justify-content: center;
+                padding: 0.75rem;
+                font-size: 0.95rem;
+            }
+            
+            .hero-section {
+                margin-top: 1rem;
             }
             
             .hero-title {
                 font-size: 1.5rem;
+                margin-top: 0.5rem;
             }
             
             .hero-subtitle {
@@ -583,16 +653,11 @@
                 font-size: 0.85rem;
                 -webkit-line-clamp: 2;
             }
-            
-            .modal-content {
-                margin: 1rem auto;
-                padding: 1.25rem;
-            }
         }
         
         @media (max-width: 480px) {
             .dashboard-header {
-                padding: 1rem 0.75rem;
+                padding: 0.75rem;
             }
             
             .logo h1 {
@@ -611,16 +676,6 @@
                 grid-template-columns: 1fr;
                 gap: 1rem;
             }
-            
-            .user-actions {
-                flex-direction: column;
-                width: 100%;
-            }
-            
-            .btn-logout, .admin-link {
-                width: 100%;
-                justify-content: center;
-            }
         }
         
         @media (min-width: 1400px) {
@@ -631,6 +686,41 @@
             .opportunities-section {
                 padding: 0 2rem 3rem;
             }
+        }
+        
+        /* Animation pour les cartes */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .opportunity-card {
+            animation: fadeInUp 0.5s ease;
+            animation-fill-mode: both;
+        }
+        
+        .opportunity-card:nth-child(1) { animation-delay: 0.1s; }
+        .opportunity-card:nth-child(2) { animation-delay: 0.2s; }
+        .opportunity-card:nth-child(3) { animation-delay: 0.3s; }
+        .opportunity-card:nth-child(4) { animation-delay: 0.4s; }
+        .opportunity-card:nth-child(5) { animation-delay: 0.5s; }
+        .opportunity-card:nth-child(6) { animation-delay: 0.6s; }
+        
+        /* Style pour les messages d'info */
+        .info-message {
+            text-align: center;
+            padding: 1rem;
+            background: var(--light-blue);
+            border-radius: var(--radius-md);
+            margin: 1rem 0;
+            color: var(--gray-700);
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -649,16 +739,19 @@
         {% endif %}
     {% endwith %}
     
+    <!-- Overlay pour mobile -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+    
     <div class="dashboard-header">
-        <button class="mobile-menu-btn" id="mobileMenuBtn">
-            <i class="fas fa-bars"></i>
-        </button>
-        
         <nav class="dashboard-nav">
             <div class="logo">
                 <i class="fas fa-graduation-cap"></i>
                 <h1>Zone<span>Bourse</span></h1>
             </div>
+            
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
             
             <div class="user-info" id="userInfo">
                 <div class="user-avatar">
@@ -743,31 +836,59 @@
         </div>
     </main>
 
-    <!-- Modal pour les détails -->
-    <div id="detailsModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <div id="modalContent"></div>
-        </div>
-    </div>
-
     <script>
-        // Menu mobile
+        // Variables globales
+        let isMenuOpen = false;
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
         const userInfo = document.getElementById('userInfo');
+        const mobileOverlay = document.getElementById('mobileOverlay');
         
-        mobileMenuBtn.addEventListener('click', () => {
-            userInfo.classList.toggle('active');
-            mobileMenuBtn.innerHTML = userInfo.classList.contains('active') 
-                ? '<i class="fas fa-times"></i>' 
-                : '<i class="fas fa-bars"></i>';
+        // Menu mobile - CORRECTION PRINCIPALE
+        function toggleMobileMenu() {
+            isMenuOpen = !isMenuOpen;
+            
+            if (isMenuOpen) {
+                // Ouvrir le menu
+                userInfo.classList.add('active');
+                mobileOverlay.classList.add('active');
+                mobileMenuBtn.innerHTML = '<i class="fas fa-times"></i>';
+                document.body.style.overflow = 'hidden';
+            } else {
+                // Fermer le menu
+                userInfo.classList.remove('active');
+                mobileOverlay.classList.remove('active');
+                mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+                document.body.style.overflow = '';
+            }
+        }
+        
+        // Événements pour le menu mobile
+        mobileMenuBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); // Empêche la propagation
+            toggleMobileMenu();
         });
         
-        // Fermer le menu mobile en cliquant à l'extérieur
-        document.addEventListener('click', (e) => {
-            if (!userInfo.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
-                userInfo.classList.remove('active');
-                mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+        // Fermer le menu en cliquant sur l'overlay
+        mobileOverlay.addEventListener('click', function(e) {
+            if (isMenuOpen) {
+                toggleMobileMenu();
+            }
+        });
+        
+        // Fermer le menu en cliquant sur un lien dans le menu
+        userInfo.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' || e.target.closest('a')) {
+                // Petite animation avant la navigation
+                setTimeout(() => {
+                    toggleMobileMenu();
+                }, 100);
+            }
+        });
+        
+        // Fermer le menu avec la touche ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && isMenuOpen) {
+                toggleMobileMenu();
             }
         });
         
@@ -806,6 +927,7 @@
         function performSearch() {
             const searchTerm = searchInput.value.toLowerCase().trim();
             const cards = document.querySelectorAll('.opportunity-card');
+            let foundResults = false;
             
             cards.forEach(card => {
                 const title = card.querySelector('.opportunity-title').textContent.toLowerCase();
@@ -814,50 +936,52 @@
                 
                 if (title.includes(searchTerm) || desc.includes(searchTerm) || type.includes(searchTerm)) {
                     card.style.display = 'flex';
+                    foundResults = true;
                 } else {
                     card.style.display = 'none';
                 }
             });
-        }
-        
-        // Modal pour les détails
-        const modal = document.getElementById('detailsModal');
-        const closeBtn = modal.querySelector('.close');
-        
-        function showOpportunityDetails(id) {
-            document.getElementById('modalContent').innerHTML = `
-                <h2 style="margin-bottom: 1rem; color: var(--gray-900);">Détails de l'opportunité</h2>
-                <div style="background: var(--gray-100); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
-                    <p>Cette fonctionnalité affichera tous les détails de l'opportunité ${id}.</p>
-                </div>
-                <p>Vous pouvez étendre cette fonction pour afficher:</p>
-                <ul style="margin: 1rem 0; padding-left: 1.5rem; color: var(--gray-700);">
-                    <li>Date limite d'inscription</li>
-                    <li>Conditions d'éligibilité</li>
-                    <li>Documents requis</li>
-                    <li>Procédure d'application</li>
-                    <li>Contact</li>
-                </ul>
-                <button class="btn-details" onclick="applyOpportunity(${id})" style="margin-top: 1rem;">
-                    <i class="fas fa-paper-plane"></i> Postuler maintenant
-                </button>
-            `;
-            modal.style.display = 'block';
-        }
-        
-        closeBtn.onclick = () => {
-            modal.style.display = 'none';
-        };
-        
-        window.onclick = (event) => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
+            
+            // Afficher un message si aucun résultat
+            if (!foundResults && searchTerm) {
+                const grid = document.getElementById('opportunitiesGrid');
+                let noResults = document.getElementById('noResultsMessage');
+                
+                if (!noResults) {
+                    noResults = document.createElement('div');
+                    noResults.id = 'noResultsMessage';
+                    noResults.className = 'no-opportunities';
+                    noResults.innerHTML = `
+                        <i class="fas fa-search"></i>
+                        <h3>Aucun résultat trouvé</h3>
+                        <p>Essayez d'autres termes de recherche.</p>
+                        <button onclick="resetSearch()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--gray-200); border: none; border-radius: var(--radius-sm); cursor: pointer;">
+                            Réinitialiser la recherche
+                        </button>
+                    `;
+                    grid.appendChild(noResults);
+                }
+            } else {
+                const noResults = document.getElementById('noResultsMessage');
+                if (noResults) noResults.remove();
             }
-        };
+        }
         
-        function applyOpportunity(id) {
-            alert(`Postulation pour l'opportunité ${id} - Cette fonctionnalité sera implémentée prochainement.`);
-            modal.style.display = 'none';
+        // Réinitialiser la recherche
+        function resetSearch() {
+            searchInput.value = '';
+            document.querySelectorAll('.opportunity-card').forEach(card => {
+                card.style.display = 'flex';
+            });
+            
+            const noResults = document.getElementById('noResultsMessage');
+            if (noResults) noResults.remove();
+            
+            // Réinitialiser le filtre
+            document.querySelectorAll('.filter-tag').forEach(tag => {
+                tag.classList.remove('active');
+            });
+            document.querySelector('.filter-tag[data-filter="all"]').classList.add('active');
         }
         
         // Fermer les messages flash après 5 secondes
@@ -869,13 +993,74 @@
             });
         }, 5000);
         
-        // Réinitialiser la recherche
-        function resetSearch() {
-            searchInput.value = '';
-            document.querySelectorAll('.opportunity-card').forEach(card => {
-                card.style.display = 'flex';
+        // Ajouter un effet de chargement lors du clic sur les liens
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (this.getAttribute('href') && !this.getAttribute('href').startsWith('#')) {
+                    // Ajouter un effet de chargement léger
+                    this.style.opacity = '0.7';
+                    this.style.pointerEvents = 'none';
+                }
             });
-        }
+        });
+        
+        // Prévenir le zoom sur les inputs sur mobile
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        // Gestion du scroll pour améliorer les performances
+        let ticking = false;
+        window.addEventListener('scroll', function() {
+            if (!ticking) {
+                window.requestAnimationFrame(function() {
+                    // Mettre à jour les animations si nécessaire
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+        
+        // Initialisation au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard ZoneBourse chargé avec succès');
+            
+            // Vérifier si nous sommes sur mobile
+            if (window.innerWidth <= 768) {
+                console.log('Mode mobile détecté');
+            }
+            
+            // Ajouter un effet de focus amélioré pour l'accessibilité
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    document.body.classList.add('keyboard-navigation');
+                }
+            });
+            
+            document.addEventListener('mousedown', function() {
+                document.body.classList.remove('keyboard-navigation');
+            });
+        });
+        
+        // Amélioration de l'accessibilité
+        document.addEventListener('keydown', function(e) {
+            // Navigation au clavier dans le menu
+            if (isMenuOpen && (e.key === 'Tab' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                e.preventDefault();
+                const focusableElements = userInfo.querySelectorAll('a, button, [tabindex]:not([tabindex="-1"])');
+                const currentIndex = Array.from(focusableElements).indexOf(document.activeElement);
+                
+                if (e.key === 'ArrowDown' || e.key === 'Tab') {
+                    const nextIndex = (currentIndex + 1) % focusableElements.length;
+                    focusableElements[nextIndex].focus();
+                } else if (e.key === 'ArrowUp') {
+                    const prevIndex = (currentIndex - 1 + focusableElements.length) % focusableElements.length;
+                    focusableElements[prevIndex].focus();
+                }
+            }
+        });
     </script>
 </body>
 </html>
