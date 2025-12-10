@@ -787,7 +787,7 @@
                     <span class="filter-tag active" data-filter="all">Toutes</span>
                     <span class="filter-tag" data-filter="bourse">Bourses</span>
                     <span class="filter-tag" data-filter="admission">Admissions</span>
-                    <span class="filter-tag" data-filter="excellence">Excellence</span>
+                    <span class="filter-tag" data-filter="Travail">Travail</span>
                 </div>
             </div>
         </div>
@@ -807,8 +807,8 @@
                                 Bourse
                             {% elif opportunity.type == 'admission' %}
                                 Admission
-                            {% elif opportunity.type == 'excellence' %}
-                                Excellence
+                            {% elif opportunity.type == 'Travail' %}
+                                Travail
                             {% else %}
                                 {{ opportunity.type|title }}
                             {% endif %}
