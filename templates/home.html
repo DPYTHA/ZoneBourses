@@ -57,6 +57,10 @@
             --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
             --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
             --shadow-lg: 0 10px 40px rgba(0,0,0,0.15);
+            --premium-gold: #FFD700;
+            --premium-dark: #8B4513;
+            --whatsapp-green: #25D366;
+            --whatsapp-dark: #128C7E;
         }
         
         * {
@@ -174,6 +178,40 @@
         
         .nav a:hover::after {
             width: 80%;
+        }
+        
+        /* Bouton Premium */
+        .btn-premium {
+            background: linear-gradient(135deg, var(--premium-gold), #FFA500);
+            color: var(--premium-dark);
+            padding: 0.625rem 1.25rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            border: 2px solid var(--premium-gold);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            font-size: 0.95rem;
+        }
+        
+        .btn-premium:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+            background: linear-gradient(135deg, #FFA500, var(--premium-gold));
+        }
+        
+        .btn-premium i {
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
         
         /* Hero Section */
@@ -534,6 +572,12 @@
                 display: flex;
             }
             
+            .btn-premium {
+                margin: 0.5rem 0;
+                width: 100%;
+                justify-content: center;
+            }
+            
             @keyframes slideDown {
                 from {
                     opacity: 0;
@@ -632,6 +676,11 @@
                 transform: translateX(-50%);
                 right: auto;
             }
+            
+            .btn-premium {
+                font-size: 0.9rem;
+                padding: 0.5rem 1rem;
+            }
         }
         
         /* Animation pour les éléments */
@@ -712,6 +761,13 @@
             </button>
             
             <nav class="nav" id="mainNav">
+                <!-- Bouton Premium ajouté dans la navigation -->
+                <a href="https://wa.me/2250000000000?text=Bonjour%20je%20souhaite%20souscrire%20à%20l'abonnement%20premium%20de%202%20euros" 
+                   class="btn-premium" 
+                   target="_blank"
+                   onclick="trackPremiumClick()">
+                    <i class="fas fa-crown"></i> Abonnement 2€
+                </a>
                 <a href="/about">À propos</a>
                 <a href="#features">Fonctionnalités</a>
                 <a href="#contact">Contact</a>
@@ -746,6 +802,17 @@
                 </a>
                 <a href="{{ url_for('login') }}" class="btn btn-secondary">
                     <i class="fas fa-sign-in-alt"></i> Se connecter
+                </a>
+            </div>
+            
+            <!-- Bouton Premium dans la section hero (optionnel) -->
+            <div style="margin-top: 2rem;">
+                <a href="https://wa.me/2250000000000?text=Bonjour%20je%20souhaite%20souscrire%20à%20l'abonnement%20premium%20de%202%20euros" 
+                   class="btn-premium" 
+                   target="_blank"
+                   onclick="trackPremiumClick()"
+                   style="font-size: 1.1rem; padding: 0.875rem 2rem;">
+                    <i class="fas fa-crown"></i> Accéder au Premium - Seulement 2€/mois
                 </a>
             </div>
         </section>
@@ -823,6 +890,24 @@
                     <p>Explorez des opportunités dans plus de 50 pays à travers le monde</p>
                 </div>
             </div>
+            
+            <!-- Section Premium dans les features -->
+            <div style="text-align: center; margin-top: 3rem; padding: 2rem; background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,165,0,0.1)); border-radius: var(--radius-md); border: 2px dashed var(--premium-gold);">
+                <h3 style="color: var(--premium-dark); margin-bottom: 1rem;">
+                    <i class="fas fa-crown" style="color: var(--premium-gold);"></i> 
+                    Version Premium
+                </h3>
+                <p style="color: var(--gray-700); margin-bottom: 1.5rem; max-width: 800px; margin-left: auto; margin-right: auto;">
+                    Accédez à des opportunités exclusives, un support prioritaire et des alertes en temps réel.
+                </p>
+                <a href="https://wa.me/89879040719?text=Bonjour%20je%20souhaite%20souscrire%20à%20l'abonnement%20premium%20de%202%20euros" 
+                   class="btn-premium" 
+                   target="_blank"
+                   onclick="trackPremiumClick()"
+                   style="font-size: 1.1rem; padding: 0.875rem 2rem;">
+                    <i class="fas fa-whatsapp"></i> Premium - 2€/mois
+                </a>
+            </div>
         </section>
         
         <!-- FOOTER -->
@@ -835,6 +920,17 @@
                 <a href="/terms">Conditions d'utilisation</a>
             </div>
             
+            <!-- Bouton Premium dans le footer -->
+            <div style="margin: 1.5rem 0;">
+                <a href="https://wa.me/89879040719?text=Bonjour%20je%20souhaite%20souscrire%20à%20l'abonnement%20premium%20de%202%20euros" 
+                   class="btn-premium" 
+                   target="_blank"
+                   onclick="trackPremiumClick()"
+                   style="background: linear-gradient(135deg, var(--whatsapp-green), var(--whatsapp-dark)); border-color: var(--whatsapp-green);">
+                    <i class="fab fa-whatsapp"></i> Souscrire au  Premium - 2€/mois
+                </a>
+            </div>
+            
             <p>
                 Vous avez déjà un compte ? 
                 <a href="{{ url_for('login') }}" style="color: var(--primary-light); font-weight: bold;">
@@ -843,7 +939,8 @@
             </p>
             
             <p class="copyright">
-                © 2024 ZoneBourse - Tous droits réservés
+                © 2024 ZoneBourse - Tous droits réservés<br>
+                <small style="opacity: 0.7;">Abonnement Premium : 2€/mois - Paiement via WhatsApp</small>
             </p>
         </footer>
     </div>
@@ -906,7 +1003,7 @@
             }
             
             // Animation des boutons
-            const buttons = document.querySelectorAll('.btn');
+            const buttons = document.querySelectorAll('.btn, .btn-premium');
             buttons.forEach(btn => {
                 btn.addEventListener('mouseenter', function() {
                     this.style.transform = 'translateY(-3px)';
@@ -991,6 +1088,25 @@
                 observer.observe(card);
             });
         });
+        
+        // Fonction pour tracker les clics sur le bouton premium
+        function trackPremiumClick() {
+            // Vous pouvez ajouter du code de tracking ici (Google Analytics, etc.)
+            console.log('Clic sur abonnement premium détecté');
+            
+            // Enregistrer dans localStorage pour éviter les popups
+            localStorage.setItem('premium_clicked', new Date().toISOString());
+            
+            
+        }
+        
+        
+        if (!localStorage.getItem('premium_clicked')) {
+           
+            setTimeout(() => {
+                
+            }, 30000); 
+        }
     </script>
 </body>
 </html>
