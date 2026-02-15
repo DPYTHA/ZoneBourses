@@ -285,13 +285,13 @@ def register():
                 email=email,
                 password=password,
                 is_admin=False,
-                is_active=True
+                is_active=False
             )
             
             db.session.add(new_user)
             db.session.commit()
             
-            flash('Inscription réussie! Vous pouvez maintenant vous connecter.', 'success')
+            flash('Inscription réussie! Votre compte est en attente d\'activation, success')
             return redirect(url_for('login'))
             
         except Exception as e:
@@ -327,7 +327,7 @@ def login():
                         return redirect(url_for('dashboard'))
                         
                 else:
-                    flash('Votre compte est désactivé.', 'error')
+                    flash('Votre compte est désactivé pour le moment ', 'error')
             else:
                 flash('Mot de passe incorrect.', 'error')
         else:
