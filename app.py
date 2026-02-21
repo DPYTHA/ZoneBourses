@@ -255,83 +255,203 @@ def admin_passwords():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    # Si c'est une requête GET, afficher la page HTML
+    if request.method == 'GET':
+        return render_template('register.html')
+    
+    # Pour les requêtes POST, on vérifie le type de contenu
     if request.method == 'POST':
         try:
-            nom = request.form['nom']
-            prenom = request.form['prenom']
-            numero = request.form['numero']
-            email = request.form['email']
-            password = request.form['password']
-            
-            # Validation simple
-            if not all([nom, prenom, numero, email, password]):
-                flash('Tous les champs sont obligatoires', 'error')
-                return redirect(url_for('register'))
-            
-            # Vérifier si l'utilisateur existe déjà
-            if User.query.filter_by(numero=numero).first():
-                flash('Ce numéro est déjà enregistré.', 'error')
-                return redirect(url_for('register'))
-            
-            if User.query.filter_by(email=email).first():
-                flash('Cet email est déjà enregistré.', 'error')
-                return redirect(url_for('register'))
-            
-            # Créer nouvel utilisateur
-            new_user = User(
-                nom=nom,
-                prenom=prenom,
-                numero=numero,
-                email=email,
-                password=password,
-                is_admin=False,
-                is_active=False
-            )
-            
-            db.session.add(new_user)
-            db.session.commit()
-            
-            flash('Inscription réussie! Votre compte est en attente d\'activation, success')
-            return redirect(url_for('login'))
-            
+            # ✅ Gestion des deux types de requêtes : JSON (mobile) ou formulaire (web)
+            if request.is_json:
+                # Requête de votre application mobile (JSON)
+                data = request.get_json()
+                nom = data.get('nom')
+                prenom = data.get('prenom')
+                numero = data.get('numero')
+                email = data.get('email')
+                password = data.get('password')
+                
+                # Réponse en JSON pour le mobile
+                if not all([nom, prenom, numero, email, password]):
+                    return jsonify({
+                        'success': False,
+                        'message': 'Tous les champs sont obligatoires'
+                    }), 400
+                
+                # Vérifier si l'utilisateur existe déjà
+                if User.query.filter_by(numero=numero).first():
+                    return jsonify({
+                        'success': False,
+                        'message': 'Ce numéro est déjà enregistré.'
+                    }), 409  # Conflict
+                
+                if User.query.filter_by(email=email).first():
+                    return jsonify({
+                        'success': False,
+                        'message': 'Cet email est déjà enregistré.'
+                    }), 409
+                
+                # Créer nouvel utilisateur
+                new_user = User(
+                    nom=nom,
+                    prenom=prenom,
+                    numero=numero,
+                    email=email,
+                    password=password,
+                    is_admin=False,
+                    is_active=False
+                )
+                
+                db.session.add(new_user)
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Inscription réussie ! Votre compte est en attente d\'activation.'
+                }), 201  # Created
+                
+            else:
+                # Requête de votre site web (formulaire HTML)
+                nom = request.form['nom']
+                prenom = request.form['prenom']
+                numero = request.form['numero']
+                email = request.form['email']
+                password = request.form['password']
+                
+                # Validation simple
+                if not all([nom, prenom, numero, email, password]):
+                    flash('Tous les champs sont obligatoires', 'error')
+                    return redirect(url_for('register'))
+                
+                # Vérifier si l'utilisateur existe déjà
+                if User.query.filter_by(numero=numero).first():
+                    flash('Ce numéro est déjà enregistré.', 'error')
+                    return redirect(url_for('register'))
+                
+                if User.query.filter_by(email=email).first():
+                    flash('Cet email est déjà enregistré.', 'error')
+                    return redirect(url_for('register'))
+                
+                # Créer nouvel utilisateur
+                new_user = User(
+                    nom=nom,
+                    prenom=prenom,
+                    numero=numero,
+                    email=email,
+                    password=password,
+                    is_admin=False,
+                    is_active=False
+                )
+                
+                db.session.add(new_user)
+                db.session.commit()
+                
+                flash('Inscription réussie! Votre compte est en attente d’activation par l’administrateur.', 'success')
+                return redirect(url_for('login'))
+                
         except Exception as e:
             db.session.rollback()
-            flash(f'Erreur lors de l\'inscription: {str(e)}', 'error')
-            return redirect(url_for('register'))
+            
+            # Gestion d'erreur selon le type de requête
+            if request.is_json:
+                return jsonify({
+                    'success': False,
+                    'message': f'Erreur lors de l\'inscription: {str(e)}'
+                }), 500
+            else:
+                flash(f'Erreur lors de l\'inscription: {str(e)}', 'error')
+                return redirect(url_for('register'))
     
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if request.method == 'GET':
+        return render_template('login.html')
+    
     if request.method == 'POST':
-        numero = request.form['numero']
-        password = request.form['password']
-        
-        user = User.query.filter_by(numero=numero).first()
-        
-        if user:
-            # Comparaison en clair comme demandé
-            if user.password == password:
-                if user.is_active:
-                    session['user_id'] = user.id
-                    session['user_nom'] = user.nom
-                    session['user_prenom'] = user.prenom
-                    session['is_admin'] = user.is_admin
-                    
-                    flash('Connexion réussie!', 'success')
-                    
-                    # Redirection différente pour admin vs utilisateur normal
-                    if user.is_admin:
-                        return redirect(url_for('admin_dashboard'))
-                    else:
-                        return redirect(url_for('dashboard'))
+        try:
+            # ✅ Gestion des deux types de requêtes
+            if request.is_json:
+                # Requête mobile (JSON)
+                data = request.get_json()
+                numero = data.get('numero')
+                password = data.get('password')
+                
+                if not numero or not password:
+                    return jsonify({
+                        'success': False,
+                        'message': 'Numéro et mot de passe requis'
+                    }), 400
+                
+                user = User.query.filter_by(numero=numero).first()
+                
+                if user and user.password == password:
+                    if user.is_active:
+                        # Créer la session
+                        session['user_id'] = user.id
+                        session['user_nom'] = user.nom
+                        session['user_prenom'] = user.prenom
+                        session['is_admin'] = user.is_admin
                         
+                        return jsonify({
+                            'success': True,
+                            'message': 'Connexion réussie',
+                            'user': {
+                                'id': user.id,
+                                'nom': user.nom,
+                                'prenom': user.prenom,
+                                'is_admin': user.is_admin
+                            }
+                        }), 200
+                    else:
+                        return jsonify({
+                            'success': False,
+                            'message': 'Votre compte est désactivé ou en attente d\'activation'
+                        }), 403
                 else:
-                    flash('Votre compte est désactivé pour le moment ', 'error')
+                    return jsonify({
+                        'success': False,
+                        'message': 'Numéro ou mot de passe incorrect'
+                    }), 401
+                    
             else:
-                flash('Mot de passe incorrect.', 'error')
-        else:
-            flash('Numéro de téléphone non reconnu.', 'error')
+                # Requête web (formulaire HTML)
+                numero = request.form['numero']
+                password = request.form['password']
+                
+                user = User.query.filter_by(numero=numero).first()
+                
+                if user:
+                    if user.password == password:
+                        if user.is_active:
+                            session['user_id'] = user.id
+                            session['user_nom'] = user.nom
+                            session['user_prenom'] = user.prenom
+                            session['is_admin'] = user.is_admin
+                            
+                            flash('Connexion réussie!', 'success')
+                            
+                            if user.is_admin:
+                                return redirect(url_for('admin_dashboard'))
+                            else:
+                                return redirect(url_for('dashboard'))
+                        else:
+                            flash('Votre compte est désactivé ou en attente d\'activation par l\'administrateur.', 'Attention')
+                    else:
+                        flash('Mot de passe incorrect.', 'error')
+                else:
+                    flash('Numéro de téléphone non reconnu.', 'error')
+                    
+        except Exception as e:
+            if request.is_json:
+                return jsonify({
+                    'success': False,
+                    'message': f'Erreur: {str(e)}'
+                }), 500
+            else:
+                flash(f'Erreur: {str(e)}', 'error')
     
     return render_template('login.html')
 
