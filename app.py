@@ -649,6 +649,26 @@ def admin_add_opportunity():
     return render_template('admin_add_opportunity.html',
                          user={'nom': session['user_nom'], 'prenom': session['user_prenom']})
 
+
+@app.route('/api/opportunities')
+def api_opportunities():
+    opportunities = Opportunity.query.order_by(Opportunity.created_at.desc()).all()
+   
+    return jsonify([
+        {
+            "id": o.id,
+            "title": o.title,
+            "type": o.type,
+            "description": o.description,
+            "pays": o.pays,
+            "montant": o.montant,
+            "deadline": o.deadline.strftime('%Y-%m-%d') if o.deadline else None,
+            "is_featured": o.is_featured,
+            "image_urls": o.image_urls.split("|||") if o.image_urls else []
+        }
+        for o in opportunities
+    ])
+
 @app.route('/admin/delete-image/<public_id>', methods=['DELETE'])
 def delete_image(public_id):
     if 'user_id' not in session or not session.get('is_admin'):
