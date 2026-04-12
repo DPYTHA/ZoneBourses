@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, timezone
 from config import Config
+from flask_cors import CORS
 import os
 import sys
 
@@ -9,6 +10,8 @@ import sys
 app = Flask(__name__)
 app.config.from_object(Config)
 app.secret_key = app.config['SECRET_KEY']  # Important pour les sessions
+
+CORS(app, supports_credentials=True, origins=["http://localhost:8081", "http://localhost:19000", "exp://*", "http://localhost:5000"])
 
 
 
@@ -789,6 +792,239 @@ def admin_users():
                          user={'nom': session['user_nom'], 'prenom': session['user_prenom']},
                          users=users,
                          now=datetime.utcnow())  # Ajoutez ceci
+
+# ========== AJOUTER CES ROUTES API À LA FIN DE VOTRE app.py EXISTANT ==========
+# (Ne supprimez RIEN de votre code actuel)
+
+# ========== NOUVELLES ROUTES API POUR L'APPLICATION MOBILE ==========
+# Ces routes sont indépendantes et n'affectent PAS vos routes web existantes
+
+@app.route('/api/me', methods=['GET'])
+def api_get_current_user():
+    """Récupérer l'utilisateur connecté - Version API"""
+    if 'user_id' not in session:
+        return jsonify({'authenticated': False}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'authenticated': False}), 401
+    
+    return jsonify({
+        'authenticated': True,
+        'id': user.id,
+        'nom': user.nom,
+        'prenom': user.prenom,
+        'numero': user.numero,
+        'email': user.email,
+        'is_admin': user.is_admin,
+        'is_active': user.is_active,
+        'subscription_days': user.subscription_days,
+        'subscription_expiry': user.subscription_expiry.isoformat() if user.subscription_expiry else None
+    })
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    """API de connexion pour l'application mobile - Version API"""
+    data = request.get_json()
+    numero = data.get('numero')
+    password = data.get('password')
+    
+    user = User.query.filter_by(numero=numero).first()
+    
+    if user and user.password == password:
+        if user.is_active:
+            session['user_id'] = user.id
+            session['user_nom'] = user.nom
+            session['user_prenom'] = user.prenom
+            session['user_numero'] = user.numero
+            session['is_admin'] = user.is_admin
+            
+            return jsonify({
+                'success': True,
+                'user': {
+                    'id': user.id,
+                    'nom': user.nom,
+                    'prenom': user.prenom,
+                    'numero': user.numero,
+                    'email': user.email,
+                    'is_admin': user.is_admin
+                }
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Compte désactivé'}), 401
+    else:
+        return jsonify({'success': False, 'error': 'Numéro ou mot de passe incorrect'}), 401
+
+@app.route('/api/register', methods=['POST'])
+def api_register():
+    """API d'inscription pour l'application mobile - Version API"""
+    data = request.get_json()
+    
+    nom = data.get('nom')
+    prenom = data.get('prenom')
+    numero = data.get('numero')
+    email = data.get('email')
+    password = data.get('password')
+    
+    # Validation
+    if not all([nom, prenom, numero, email, password]):
+        return jsonify({'success': False, 'error': 'Tous les champs sont obligatoires'}), 400
+    
+    if User.query.filter_by(numero=numero).first():
+        return jsonify({'success': False, 'error': 'Ce numéro est déjà enregistré'}), 400
+    
+    if User.query.filter_by(email=email).first():
+        return jsonify({'success': False, 'error': 'Cet email est déjà enregistré'}), 400
+    
+    new_user = User(
+        nom=nom,
+        prenom=prenom,
+        numero=numero,
+        email=email,
+        password=password,
+        is_admin=False,
+        is_active=True
+    )
+    
+    db.session.add(new_user)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Inscription réussie'})
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    """API de déconnexion"""
+    session.clear()
+    return jsonify({'success': True})
+
+@app.route('/api/opportunities', methods=['GET'])
+def api_get_opportunities():
+    """Récupérer toutes les opportunités - Version API"""
+    opportunities = Opportunity.query.order_by(Opportunity.created_at.desc()).all()
+    
+    return jsonify({
+        'opportunities': [{
+            'id': opp.id,
+            'title': opp.title,
+            'type': opp.type,
+            'description': opp.description[:200] + '...' if len(opp.description) > 200 else opp.description,
+            'pays': opp.pays,
+            'montant': opp.montant,
+            'is_featured': opp.is_featured,
+            'image_urls': opp.image_urls,
+            'deadline': opp.deadline.isoformat() if opp.deadline else None,
+            'created_at': opp.created_at.isoformat()
+        } for opp in opportunities]
+    })
+
+@app.route('/api/opportunities/<int:opportunity_id>', methods=['GET'])
+def api_get_opportunity_detail(opportunity_id):
+    """Récupérer les détails complets d'une opportunité - Version API"""
+    opportunity = Opportunity.query.get_or_404(opportunity_id)
+    
+    # Traiter les listes
+    images = opportunity.image_urls.split('|||') if opportunity.image_urls else []
+    steps = opportunity.postulation_steps.split('|||') if opportunity.postulation_steps else []
+    documents = opportunity.documents_required.split('|||') if opportunity.documents_required else []
+    
+    return jsonify({
+        'id': opportunity.id,
+        'title': opportunity.title,
+        'type': opportunity.type,
+        'description': opportunity.description,
+        'pays': opportunity.pays,
+        'montant': opportunity.montant,
+        'deadline': opportunity.deadline.isoformat() if opportunity.deadline else None,
+        'is_featured': opportunity.is_featured,
+        'images': images,
+        'postulation_steps': steps,
+        'documents_required': documents,
+        'postulation_link': opportunity.postulation_link,
+        'contact_email': opportunity.contact_email,
+        'contact_phone': opportunity.contact_phone,
+        'video_url': opportunity.video_url,
+        'created_at': opportunity.created_at.isoformat()
+    })
+
+@app.route('/api/opportunities/featured', methods=['GET'])
+def api_get_featured_opportunities():
+    """Récupérer les opportunités en vedette - Version API"""
+    featured = Opportunity.query.filter_by(is_featured=True).order_by(Opportunity.created_at.desc()).limit(5).all()
+    
+    return jsonify({
+        'opportunities': [{
+            'id': opp.id,
+            'title': opp.title,
+            'type': opp.type,
+            'description': opp.description[:150] + '...' if len(opp.description) > 150 else opp.description,
+            'pays': opp.pays,
+            'montant': opp.montant,
+            'image_urls': opp.image_urls
+        } for opp in featured]
+    })
+
+@app.route('/api/opportunities/by-type/<string:type>', methods=['GET'])
+def api_get_opportunities_by_type(type):
+    """Récupérer les opportunités par catégorie - Version API"""
+    opportunities = Opportunity.query.filter_by(type=type).order_by(Opportunity.created_at.desc()).all()
+    
+    return jsonify({
+        'opportunities': [{
+            'id': opp.id,
+            'title': opp.title,
+            'type': opp.type,
+            'description': opp.description[:200] + '...' if len(opp.description) > 200 else opp.description,
+            'pays': opp.pays,
+            'montant': opp.montant,
+            'image_urls': opp.image_urls,
+            'deadline': opp.deadline.isoformat() if opp.deadline else None
+        } for opp in opportunities]
+    })
+
+@app.route('/api/stats', methods=['GET'])
+def api_get_stats():
+    """Récupérer les statistiques pour l'accueil - Version API"""
+    total_opportunities = Opportunity.query.count()
+    featured_count = Opportunity.query.filter_by(is_featured=True).count()
+    
+    all_pays = Opportunity.query.with_entities(Opportunity.pays).all()
+    unique_pays = len(set([p[0] for p in all_pays if p[0]]))
+    
+    total_users = User.query.count()
+    
+    return jsonify({
+        'total_opportunities': total_opportunities,
+        'unique_pays': unique_pays or 45,
+        'total_users': total_users,
+        'featured_count': featured_count
+    })
+
+@app.route('/api/categories', methods=['GET'])
+def api_get_categories():
+    """Récupérer les catégories avec comptage - Version API"""
+    categories = [
+        {'id': 'bourse', 'name': 'Bourses', 'icon': 'school', 'description': 'Bourses d\'études'},
+        {'id': 'excellence', 'name': 'Excellence', 'icon': 'star', 'description': 'Programmes d\'excellence'},
+        {'id': 'admission', 'name': 'Admissions', 'icon': 'book-open', 'description': 'Admissions universitaires'}
+    ]
+    
+    for cat in categories:
+        cat['count'] = Opportunity.query.filter_by(type=cat['id']).count()
+    
+    return jsonify({'categories': categories})
+
+@app.route('/api/check-session', methods=['GET'])
+def api_check_session():
+    """Vérifier la session - Version API"""
+    return jsonify({
+        'authenticated': 'user_id' in session,
+        'is_admin': session.get('is_admin', False),
+        'user': {
+            'nom': session.get('user_nom'),
+            'prenom': session.get('user_prenom'),
+            'numero': session.get('user_numero')
+        } if 'user_id' in session else None
+    })
 
 if __name__ == '__main__':
     init_db()
