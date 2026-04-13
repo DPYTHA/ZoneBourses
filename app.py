@@ -1026,6 +1026,51 @@ def api_check_session():
         } if 'user_id' in session else None
     })
 
+
+# app.py - Ajoutez ces routes
+
+@app.route('/api/user/data', methods=['GET'])
+def get_user_data():
+    """Récupérer les données personnelles de l'utilisateur"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Non authentifié'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'error': 'Utilisateur non trouvé'}), 404
+    
+    return jsonify({
+        'nom': user.nom,
+        'prenom': user.prenom,
+        'email': user.email,
+        'numero': user.numero,
+        'created_at': user.created_at.isoformat(),
+        'subscription_days': user.subscription_days,
+    })
+
+@app.route('/api/user/delete', methods=['DELETE'])
+def delete_user_account():
+    """Supprimer définitivement le compte utilisateur"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Non authentifié'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'error': 'Utilisateur non trouvé'}), 404
+    
+    try:
+        # Supprimer l'utilisateur
+        db.session.delete(user)
+        db.session.commit()
+        
+        # Nettoyer la session
+        session.clear()
+        
+        return jsonify({'success': True, 'message': 'Compte supprimé avec succès'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     init_db()
     print("=" * 50)
