@@ -1070,6 +1070,44 @@ def delete_user_account():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+    
+    # app.py - Routes admin API
+
+@app.route('/admin/api/stats', methods=['GET'])
+def admin_api_stats():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    total_users = User.query.count()
+    active_users = User.query.filter_by(is_active=True).count()
+    total_opportunities = Opportunity.query.count()
+    featured_opportunities = Opportunity.query.filter_by(is_featured=True).count()
+    
+    return jsonify({
+        'totalUsers': total_users,
+        'activeUsers': active_users,
+        'totalOpportunities': total_opportunities,
+        'featuredOpportunities': featured_opportunities,
+    })
+
+@app.route('/admin/api/users', methods=['GET'])
+def admin_api_users():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    users = User.query.all()
+    return jsonify({
+        'users': [{
+            'id': u.id,
+            'nom': u.nom,
+            'prenom': u.prenom,
+            'email': u.email,
+            'numero': u.numero,
+            'is_admin': u.is_admin,
+            'is_active': u.is_active,
+            'created_at': u.created_at.isoformat(),
+        } for u in users]
+    })
 
 if __name__ == '__main__':
     init_db()
