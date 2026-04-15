@@ -839,6 +839,9 @@ def api_login():
             session['user_numero'] = user.numero
             session['is_admin'] = user.is_admin
             
+            # CORRECTION : Convertir is_admin en booléen
+            is_admin_value = bool(user.is_admin) if user.is_admin is not None else False
+            
             return jsonify({
                 'success': True,
                 'user': {
@@ -847,14 +850,13 @@ def api_login():
                     'prenom': user.prenom,
                     'numero': user.numero,
                     'email': user.email,
-                    'is_admin': user.is_admin
+                    'is_admin': is_admin_value  # ← Force en booléen True/False
                 }
             })
         else:
             return jsonify({'success': False, 'error': 'Compte désactivé'}), 401
     else:
         return jsonify({'success': False, 'error': 'Numéro ou mot de passe incorrect'}), 401
-
 @app.route('/api/register', methods=['POST'])
 def api_register():
     """API d'inscription pour l'application mobile - Version API"""
